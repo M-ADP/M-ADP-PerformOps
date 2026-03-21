@@ -1,0 +1,8 @@
+[project]
+name = "performops"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.135.1",
+]
