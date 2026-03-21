@@ -45,9 +45,13 @@ class OpenRouterLLM(LLM):
     async def _call(self, prompt: str) -> Any:
         try:
             response = await self.model.ainvoke(prompt)
-            return response.content
+            content = response.content
+            if not content:
+                logger.error(f"[OpenRouterLLM] empty response. prompt={prompt[:200]}")
+                raise ValueError("LLM returned empty response")
+            return content
         except Exception as e:
-            logger.error(f"[OpenRouterLLM] failed. prompt length={len(prompt)}\n{prompt}\nerror={e}")
+            logger.error(f"[OpenRouterLLM] failed. prompt length={len(prompt)}, error={e}")
             raise
 
     async def _batch(self, prompts: List[str]) -> List[Any]:

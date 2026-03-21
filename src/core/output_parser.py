@@ -1,6 +1,10 @@
 import json
+import logging
+import re
 from abc import ABC, abstractmethod
-from typing import Any, Generic, TypeVar
+from typing import Generic, TypeVar
+
+logger = logging.getLogger(__name__)
 
 from src.core.performops.model import (
     PerformOpsAnalysisResult,
@@ -21,11 +25,20 @@ class OutputParser(ABC, Generic[T]):
     def parse(self, response: str) -> T:
         raise NotImplementedError
 
+    def _extract_json(self, response: str) -> dict:
+        cleaned = re.sub(r"^```(?:json)?\s*", "", response.strip(), flags=re.IGNORECASE)
+        cleaned = re.sub(r"\s*```$", "", cleaned.strip())
+        try:
+            return json.loads(cleaned)
+        except json.JSONDecodeError as e:
+            logger.error(f"[OutputParser] JSON parse failed. response={response!r}, error={e}")
+            raise
+
 
 class AnalysisResultOutputParser(OutputParser[PerformOpsAnalysisResult]):
 
     def parse(self, response: str) -> PerformOpsAnalysisResult:
-        parsed = json.loads(response)
+        parsed = self._extract_json(response)
         return PerformOpsAnalysisResult(
             result=parsed["result"],
             resource=PerformOpsAnalysisResource(
@@ -42,7 +55,7 @@ class AnalysisResultOutputParser(OutputParser[PerformOpsAnalysisResult]):
 class PlanOutputParser(OutputParser[PerformOpsPlan]):
 
     def parse(self, response: str) -> PerformOpsPlan:
-        parsed = json.loads(response)
+        parsed = self._extract_json(response)
         return PerformOpsPlan(
             plans=[PlanSet(**p) for p in parsed["plans"]],
         )
@@ -51,7 +64,7 @@ class PlanOutputParser(OutputParser[PerformOpsPlan]):
 class SummaryOutputParser(OutputParser[PerformOpsSummary]):
 
     def parse(self, response: str) -> PerformOpsSummary:
-        parsed = json.loads(response)
+        parsed = self._extract_json(response)
         return PerformOpsSummary(
             summary=parsed["summary"],
             severity=PerformOpsSeverity(parsed["severity"]),
