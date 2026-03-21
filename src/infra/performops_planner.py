@@ -1,7 +1,6 @@
-import json
-
 from src.core.llm import LLM
-from src.core.performops.model import PerformOpsAnalysisResult, PerformOpsPlan, PlanSet
+from src.core.output_parser import PlanOutputParser
+from src.core.performops.model import PerformOpsAnalysisResult, PerformOpsPlan
 from src.core.performops.planner import PerformOpsPlanner
 from src.deps.get_llm import get_llm
 
@@ -32,6 +31,7 @@ class PerformOpsPlannerImpl(PerformOpsPlanner):
 
     def __init__(self, llm: LLM = None):
         self._llm = llm or get_llm(template=PLAN_PROMPT)
+        self._parser = PlanOutputParser()
 
     async def plan(
             self,
@@ -48,8 +48,5 @@ class PerformOpsPlannerImpl(PerformOpsPlanner):
                 analysis_result.resource.latency,
             ],
         )
-        parsed = json.loads(response)
 
-        return PerformOpsPlan(
-            plans=[PlanSet(**p) for p in parsed["plans"]],
-        )
+        return self._parser.parse(response)

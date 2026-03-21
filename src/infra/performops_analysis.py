@@ -1,15 +1,11 @@
 import asyncio
-import json
 
 from src.core.analyzer.metrics import MetricsAnalyzer
 from src.core.analyzer.workload_state import WorkLoadStateAnalyzer
 from src.core.llm import LLM
+from src.core.output_parser import AnalysisResultOutputParser
 from src.core.performops.analysis import PerformOpsAnalysis
-from src.core.performops.model import (
-    PerformOpsAnalysisResult,
-    PerformOpsanalysisResource,
-    TrackingMetric,
-)
+from src.core.performops.model import PerformOpsAnalysisResult
 from src.deps.get_llm import get_llm
 
 ANALYSIS_PROMPT = """아래는 {app_deployment_name} (project_id: {project_id})의 현재 상태 데이터입니다.
@@ -61,6 +57,7 @@ class PerformOpsAnalysisImpl(PerformOpsAnalysis):
             workload_state_analyzer=workload_state_analyzer,
         )
         self._llm = llm or get_llm(template=ANALYSIS_PROMPT)
+        self._parser = AnalysisResultOutputParser()
 
     async def analyze(
             self,
@@ -101,16 +98,5 @@ class PerformOpsAnalysisImpl(PerformOpsAnalysis):
                 latency,
             ],
         )
-        parsed = json.loads(response)
 
-        return PerformOpsAnalysisResult(
-            result=parsed["result"],
-            resource=PerformOpsanalysisResource(
-                project_resource=TrackingMetric(**parsed["project_resource"]),
-                app_deployment_resource=TrackingMetric(**parsed["app_deployment_resource"]),
-                deployment_status=TrackingMetric(**parsed["deployment_status"]),
-                pod_log=TrackingMetric(**parsed["pod_log"]),
-                traffic=TrackingMetric(**parsed["traffic"]),
-                latency=TrackingMetric(**parsed["latency"]),
-            ),
-        )
+        return self._parser.parse(response)

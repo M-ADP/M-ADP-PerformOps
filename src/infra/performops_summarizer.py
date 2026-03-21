@@ -1,12 +1,6 @@
-import json
-
 from src.core.llm import LLM
-from src.core.performops.model import (
-    PerformOpsAnalysisResult,
-    PerformOpsPlan,
-    PerformOpsSummary,
-    PerfromOpsSeverity,
-)
+from src.core.output_parser import SummaryOutputParser
+from src.core.performops.model import PerformOpsAnalysisResult, PerformOpsPlan, PerformOpsSummary
 from src.core.performops.summarizer import PerformOpsSummarizer
 from src.deps.get_llm import get_llm
 
@@ -39,6 +33,7 @@ class PerformOpsSummarizerImpl(PerformOpsSummarizer):
 
     def __init__(self, llm: LLM = None):
         self._llm = llm or get_llm(template=SUMMARY_PROMPT)
+        self._parser = SummaryOutputParser()
 
     async def summarize(
             self,
@@ -62,9 +57,4 @@ class PerformOpsSummarizerImpl(PerformOpsSummarizer):
             ],
         )
 
-        parsed = json.loads(response)
-
-        return PerformOpsSummary(
-            summary=parsed["summary"],
-            severity=PerfromOpsSeverity(parsed["severity"]),
-        )
+        return self._parser.parse(response)
