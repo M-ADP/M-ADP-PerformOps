@@ -66,3 +66,17 @@ class PrometheusMetricsAnalyzer(MetricsAnalyzer):
             f'}})'
         )
         return await self._query(promql)
+
+    async def get_app_deployment_latency(
+            self,
+            project_id: int,
+            app_deployment_name: str,
+    ):
+        promql = (
+            f'histogram_quantile(0.95, sum(rate('
+            f'istio_request_duration_milliseconds_bucket{{'
+            f'namespace="{project_id}",'
+            f'x-app-deployment-id="{app_deployment_name}"'
+            f'}}[5m])) by (le))'
+        )
+        return await self._query(promql)

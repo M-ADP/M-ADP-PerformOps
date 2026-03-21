@@ -31,6 +31,9 @@ Memory: {memory}
 ## 트래픽
 {traffic}
 
+## 지연 시간 (P95 latency)
+{latency}
+
 각 항목에 대해 현재 상태(state), 변화(change), 판단 근거(basis)를 분석하고
 전체 원인 분석 결과(result)를 아래 JSON 형식으로만 반환하세요.
 
@@ -40,7 +43,8 @@ Memory: {memory}
   "app_deployment_resource": {{"state": "...", "change": "...", "basis": "..."}},
   "deployment_status": {{"state": "...", "change": "...", "basis": "..."}},
   "pod_log": {{"state": "...", "change": "...", "basis": "..."}},
-  "traffic": {{"state": "...", "change": "...", "basis": "..."}}
+  "traffic": {{"state": "...", "change": "...", "basis": "..."}},
+  "latency": {{"state": "...", "change": "...", "basis": "..."}}
 }}"""
 
 
@@ -71,6 +75,7 @@ class PerformOpsAnalysisImpl(PerformOpsAnalysis):
             traffic,
             cpu,
             memory,
+            latency,
         ) = await asyncio.gather(
             self._workload_state_analyzer.get_project_resource(project_id),
             self._workload_state_analyzer.get_app_deployment_resource(project_id, app_deployment_name),
@@ -79,6 +84,7 @@ class PerformOpsAnalysisImpl(PerformOpsAnalysis):
             self._metrics_analyzer.get_app_deployment_traffic(project_id, app_deployment_name),
             self._metrics_analyzer.get_app_deployment_cpu(project_id, app_deployment_name),
             self._metrics_analyzer.get_app_deployment_memory(project_id, app_deployment_name),
+            self._metrics_analyzer.get_app_deployment_latency(project_id, app_deployment_name),
         )
 
         prompt = ANALYSIS_PROMPT.format(
@@ -91,6 +97,7 @@ class PerformOpsAnalysisImpl(PerformOpsAnalysis):
             traffic=traffic,
             cpu=cpu,
             memory=memory,
+            latency=latency,
         )
 
         response = await self._llm.chat(query=prompt)
@@ -104,5 +111,6 @@ class PerformOpsAnalysisImpl(PerformOpsAnalysis):
                 deployment_status=TrackingMetric(**parsed["deployment_status"]),
                 pod_log=TrackingMetric(**parsed["pod_log"]),
                 traffic=TrackingMetric(**parsed["traffic"]),
+                latency=TrackingMetric(**parsed["latency"]),
             ),
         )

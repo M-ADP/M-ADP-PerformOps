@@ -54,6 +54,6 @@ class PerformopsRepositoryImpl(PerformopsRepository):
             app_deployment_name=performops_result.app_deployment_name,
             summary=performops_result.summary_text,
             severity=performops_result.severity,
-            influence=performops_result.analysis_result,
-            cause=performops_result.analysis_result,
+            influence=performops_result.analysis_result.resource.traffic.basis,
+            cause=performops_result.analysis_result.result,
         )

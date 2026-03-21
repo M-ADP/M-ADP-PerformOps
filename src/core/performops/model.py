@@ -25,11 +25,11 @@ class TrackingMetric:
 @dataclass
 class PerformOpsanalysisResource:
     project_resource: TrackingMetric
-    project_resource: TrackingMetric
     app_deployment_resource: TrackingMetric
     deployment_status: TrackingMetric
     pod_log: TrackingMetric
     traffic: TrackingMetric
+    latency: TrackingMetric
 
 @dataclass
 class PerformOpsAnalysisResult:

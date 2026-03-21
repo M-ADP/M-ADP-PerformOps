@@ -16,6 +16,7 @@ PLAN_PROMPT = """아래는 성능 이상 원인 분석 결과입니다.
 - Deployment 상태: {deployment_status}
 - Pod 로그: {pod_log}
 - 트래픽: {traffic}
+- 지연 시간: {latency}
 
 위 분석 결과를 바탕으로 조치 계획을 아래 JSON 형식으로만 반환하세요.
 
@@ -43,6 +44,7 @@ class PerformOpsPlannerImpl(PerformOpsPlanner):
             deployment_status=analysis_result.resource.deployment_status,
             pod_log=analysis_result.resource.pod_log,
             traffic=analysis_result.resource.traffic,
+            latency=analysis_result.resource.latency,
         )
 
         response = await self._llm.chat(query=prompt)

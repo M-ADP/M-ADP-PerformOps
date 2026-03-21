@@ -35,3 +35,11 @@ class MetricsAnalyzer(ABC):
     ):
         raise NotImplementedError
 
+    @abstractmethod
+    async def get_app_deployment_latency(
+            self,
+            project_id : int,
+            app_deployment_name : str,
+    ):
+        raise NotImplementedError
+
