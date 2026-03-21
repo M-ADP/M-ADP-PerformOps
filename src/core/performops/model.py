@@ -46,7 +46,6 @@ class PlanSet:
 class PerformOpsPlan:
     plans : List[PlanSet]
 
-@dataclass
 class PerfromOpsSeverity(str, Enum):
     LOW = "low"
     MEDIUM = "medium"

@@ -31,23 +31,23 @@ PLAN_PROMPT = """아래는 성능 이상 원인 분석 결과입니다.
 class PerformOpsPlannerImpl(PerformOpsPlanner):
 
     def __init__(self, llm: LLM = None):
-        self._llm = llm or get_llm()
+        self._llm = llm or get_llm(template=PLAN_PROMPT)
 
     async def plan(
             self,
             analysis_result: PerformOpsAnalysisResult,
     ) -> PerformOpsPlan:
-        prompt = PLAN_PROMPT.format(
-            result=analysis_result.result,
-            project_resource=analysis_result.resource.project_resource,
-            app_deployment_resource=analysis_result.resource.app_deployment_resource,
-            deployment_status=analysis_result.resource.deployment_status,
-            pod_log=analysis_result.resource.pod_log,
-            traffic=analysis_result.resource.traffic,
-            latency=analysis_result.resource.latency,
+        response = await self._llm.chat(
+            variables=[
+                analysis_result.result,
+                analysis_result.resource.project_resource,
+                analysis_result.resource.app_deployment_resource,
+                analysis_result.resource.deployment_status,
+                analysis_result.resource.pod_log,
+                analysis_result.resource.traffic,
+                analysis_result.resource.latency,
+            ],
         )
-
-        response = await self._llm.chat(query=prompt)
         parsed = json.loads(response)
 
         return PerformOpsPlan(

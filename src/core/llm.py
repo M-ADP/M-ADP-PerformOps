@@ -23,11 +23,12 @@ class LLM(ABC):
 
     async def chat(
             self,
-            query: str,
             variables: List = None,
+            query: str = None,
     ) -> Any:
+        template = query or self.template
         try:
-            prompt = self._inject(query, variables) if variables else query
+            prompt = self._inject(template, variables) if variables else template
         except Exception as e:
             logger.error(f"[LLM] _inject failed: {e}\nvariables={variables}")
             raise

@@ -60,7 +60,7 @@ class PerformOpsAnalysisImpl(PerformOpsAnalysis):
             metrics_analyzer=metrics_analyzer,
             workload_state_analyzer=workload_state_analyzer,
         )
-        self._llm = llm or get_llm()
+        self._llm = llm or get_llm(template=ANALYSIS_PROMPT)
 
     async def analyze(
             self,
@@ -87,20 +87,20 @@ class PerformOpsAnalysisImpl(PerformOpsAnalysis):
             self._metrics_analyzer.get_app_deployment_latency(project_id, app_deployment_name),
         )
 
-        prompt = ANALYSIS_PROMPT.format(
-            project_id=project_id,
-            app_deployment_name=app_deployment_name,
-            project_resource=project_resource,
-            app_deployment_resource=app_deployment_resource,
-            deployment_status=deployment_status,
-            pod_log=pod_log,
-            traffic=traffic,
-            cpu=cpu,
-            memory=memory,
-            latency=latency,
+        response = await self._llm.chat(
+            variables=[
+                app_deployment_name,
+                project_id,
+                project_resource,
+                cpu,
+                memory,
+                app_deployment_resource,
+                deployment_status,
+                pod_log,
+                traffic,
+                latency,
+            ],
         )
-
-        response = await self._llm.chat(query=prompt)
         parsed = json.loads(response)
 
         return PerformOpsAnalysisResult(
