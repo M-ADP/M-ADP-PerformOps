@@ -12,3 +12,7 @@ class Performops:
     severity: str
     id: int | None = None
     created_at: datetime = field(default_factory=datetime.utcnow)
+
+@dataclass
+class PerformOpsAnalysisResult:
+    ...
