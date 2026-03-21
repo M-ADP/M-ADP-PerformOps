@@ -22,8 +22,8 @@ class PrometheusMetricsAnalyzer(MetricsAnalyzer):
     ):
         promql = (
             f'sum(rate(istio_requests_total{{'
-            f'namespace="{project_id}",'
-            f'x-app-deployment-id="{app_deployment_name}"'
+            f'namespace="project-{project_id}",'
+            f'x_app_deployment_id="{app_deployment_name}"'
             f'}}[5m])) by (response_code)'
         )
         return await self._query(promql)
@@ -35,8 +35,8 @@ class PrometheusMetricsAnalyzer(MetricsAnalyzer):
     ):
         promql = (
             f'sum(rate(container_cpu_usage_seconds_total{{'
-            f'namespace="{project_id}",'
-            f'x-app-deployment-id="{app_deployment_name}"'
+            f'namespace="project-{project_id}",'
+            f'pod=~"{app_deployment_name}-.*"'
             f'}}[5m]))'
         )
         return await self._query(promql)
@@ -48,8 +48,8 @@ class PrometheusMetricsAnalyzer(MetricsAnalyzer):
     ):
         promql = (
             f'sum(container_memory_usage_bytes{{'
-            f'namespace="{project_id}",'
-            f'x-app-deployment-id="{app_deployment_name}"'
+            f'namespace="project-{project_id}",'
+            f'pod=~"{app_deployment_name}-.*"'
             f'}})'
         )
         return await self._query(promql)
@@ -61,8 +61,8 @@ class PrometheusMetricsAnalyzer(MetricsAnalyzer):
     ):
         promql = (
             f'sum(container_fs_usage_bytes{{'
-            f'namespace="{project_id}",'
-            f'x-app-deployment-id="{app_deployment_name}"'
+            f'namespace="project-{project_id}",'
+            f'pod=~"{app_deployment_name}-.*"'
             f'}})'
         )
         return await self._query(promql)
@@ -75,8 +75,8 @@ class PrometheusMetricsAnalyzer(MetricsAnalyzer):
         promql = (
             f'histogram_quantile(0.95, sum(rate('
             f'istio_request_duration_milliseconds_bucket{{'
-            f'namespace="{project_id}",'
-            f'x-app-deployment-id="{app_deployment_name}"'
+            f'namespace="project-{project_id}",'
+            f'x_app_deployment_id="{app_deployment_name}"'
             f'}}[5m])) by (le))'
         )
         return await self._query(promql)
