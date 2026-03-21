@@ -12,6 +12,8 @@ class PerformOpsAnalysis(ABC):
     @abstractmethod
     async def analyze(
             self,
+            project_id : int,
+            app_deployment_id : int,
             error_tracker : ErrorTracker = Depends(get_error_tracker),
     ) -> PerformOpsAnalysisResult:
         raise NotImplementedError

@@ -16,3 +16,20 @@ class Performops:
 @dataclass
 class PerformOpsAnalysisResult:
     ...
+
+@dataclass
+class PerformOpsPlan:
+    ...
+
+@dataclass
+class PerformOpsSummary:
+    ...
+
+@dataclass
+class PerformOpsResult:
+    project_id: int
+    app_deployment_id: int
+    analysis_result: PerformOpsAnalysisResult
+    plan: PerformOpsPlan
+    summary: PerformOpsSummary
+
