@@ -1,12 +1,15 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.uow import UnitOfWork
+from src.core.performops.repository import PerformopsRepository
+from src.infra.db.performops.repository import PerformopsRepositoryImpl
 
 
 class SqlAlchemyUnitOfWork(UnitOfWork):
 
     def __init__(self, session: AsyncSession):
         self.session = session
+        self.performops: PerformopsRepository = PerformopsRepositoryImpl(session)
 
     async def __aenter__(self):
         return self
