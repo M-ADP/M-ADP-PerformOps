@@ -1,4 +1,4 @@
-from src.common.config import settings
+from src.common.config.prometheus import PrometheusConfig
 from src.core.analyzer.metrics import MetricsAnalyzer
 from src.core.requester import Requester
 
@@ -7,7 +7,7 @@ class PrometheusMetricsAnalyzer(MetricsAnalyzer):
 
     def __init__(self, requester: Requester):
         self._requester = requester
-        self._base_url = settings.prometheus_url
+        self._base_url = PrometheusConfig.URL
 
     async def _query(self, promql: str):
         return await self._requester.post(

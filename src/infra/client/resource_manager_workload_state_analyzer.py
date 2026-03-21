@@ -1,4 +1,4 @@
-from src.common.config import settings
+from src.common.config.resource_manager import ResourceManagerConfig
 from src.core.analyzer.workload_state import WorkLoadStateAnalyzer
 from src.core.requester import Requester
 
@@ -7,15 +7,16 @@ class ResourceManagerWorkLoadStateAnalyzer(WorkLoadStateAnalyzer):
 
     def __init__(self, requester: Requester):
         self._requester = requester
-        self._base_url = settings.resource_manager_url
+        self._base_url = ResourceManagerConfig.URL
 
-    async def get_app_deployment_resource_in_project(
+    async def get_project_resource(
             self,
             project_id: int,
     ):
-        return await self._requester.get(
-            url=f"{self._base_url}/apps/{project_id}/resource",
+        response = await self._requester.get(
+            url=f"{self._base_url}/projects/{project_id}/resource",
         )
+        return response["data"]
 
     async def get_app_deployment_events(
             self,

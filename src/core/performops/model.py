@@ -4,6 +4,7 @@ from enum import Enum
 from typing import List
 
 
+
 @dataclass
 class Performops:
     project_id: int
@@ -22,13 +23,19 @@ class TrackingMetric:
       basis: str    # 판단 근거
 
 @dataclass
-class PerformOpsAnalysisResult:
+class PerformOpsanalysisResource:
     project_resource: TrackingMetric
     project_resource: TrackingMetric
     app_deployment_resource: TrackingMetric
     deployment_status: TrackingMetric
     pod_log: TrackingMetric
     traffic: TrackingMetric
+
+@dataclass
+class PerformOpsAnalysisResult:
+    result : str
+    resource : PerformOpsanalysisResource
+
 
 @dataclass
 class PlanSet:

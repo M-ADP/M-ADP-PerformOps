@@ -1,3 +1,10 @@
+from datetime import datetime
+
+from sqlalchemy import BigInteger, String, DateTime
+from sqlalchemy.orm import Mapped, mapped_column
+
+from src.infra.db.base_entity import Base
+
 
 class PerformOps(Base):
     __tablename__ = "performops"
@@ -6,7 +13,6 @@ class PerformOps(Base):
 
     project_id: Mapped[int] = mapped_column(
         BigInteger,
-        ForeignKey("project.id"),
         nullable=False
     )
 

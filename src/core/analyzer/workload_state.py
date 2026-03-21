@@ -4,6 +4,13 @@ from abc import ABC, abstractmethod
 class WorkLoadStateAnalyzer(ABC):
 
     @abstractmethod
+    async def get_project_resource(
+            self,
+            project_id: int,
+    ):
+        raise NotImplementedError
+
+    @abstractmethod
     async def get_app_deployment_events(
             self,
             project_id : int,
