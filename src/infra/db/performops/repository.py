@@ -1,6 +1,9 @@
+from typing import List
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.common.schema import CursorPage, CursorRequest
 from src.core.performops.model import Performops
 from src.core.performops.repository import PerformopsRepository
 from src.infra.db.performops.model import PerformOps
@@ -11,11 +14,21 @@ class PerformopsRepositoryImpl(PerformopsRepository):
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def get_by_project_id(self, project_id: int) -> list[Performops]:
-        result = await self.session.execute(
-            select(PerformOps).where(PerformOps.project_id == project_id)
-        )
-        return [self._to_domain(row) for row in result.scalars().all()]
+    async def get_by_project_id(self, project_id: int, cursor_request: CursorRequest) -> CursorPage[Performops]:
+        query = select(PerformOps).where(PerformOps.project_id == project_id)
+
+        if cursor_request.cursor is not None:
+            query = query.where(PerformOps.id > cursor_request.cursor)
+
+        query = query.order_by(PerformOps.id).limit(cursor_request.size + 1)
+
+        result = await self.session.execute(query)
+        rows = result.scalars().all()
+
+        has_next = len(rows) > cursor_request.size
+        items = [self._to_domain(row) for row in rows[:cursor_request.size]]
+
+        return CursorPage(items=items, has_next=has_next)
 
     async def save(self, performops: Performops) -> Performops:
         model = self._to_model(performops)
