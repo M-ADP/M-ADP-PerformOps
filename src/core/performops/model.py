@@ -1,4 +1,5 @@
-from dataclasses import dataclass, field
+from dataclasses import field
+from pydantic.dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from typing import List
@@ -8,7 +9,7 @@ from typing import List
 @dataclass
 class Performops:
     project_id: int
-    app_deployment_name: int
+    app_deployment_name: str
     summary: str
     influence: str
     cause: str
@@ -23,7 +24,7 @@ class TrackingMetric:
       basis: str    # 판단 근거
 
 @dataclass
-class PerformOpsanalysisResource:
+class PerformOpsAnalysisResource:
     project_resource: TrackingMetric
     app_deployment_resource: TrackingMetric
     deployment_status: TrackingMetric
@@ -34,7 +35,7 @@ class PerformOpsanalysisResource:
 @dataclass
 class PerformOpsAnalysisResult:
     result : str
-    resource : PerformOpsanalysisResource
+    resource : PerformOpsAnalysisResource
 
 
 @dataclass
@@ -46,7 +47,7 @@ class PlanSet:
 class PerformOpsPlan:
     plans : List[PlanSet]
 
-class PerfromOpsSeverity(str, Enum):
+class PerformOpsSeverity(str, Enum):
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
@@ -54,12 +55,12 @@ class PerfromOpsSeverity(str, Enum):
 @dataclass
 class PerformOpsSummary:
     summary : str
-    severity : PerfromOpsSeverity
+    severity : PerformOpsSeverity
 
 @dataclass
 class PerformOpsResult:
     project_id: int
-    app_deployment_name: int
+    app_deployment_name: str
     analysis_result: PerformOpsAnalysisResult
     plan: PerformOpsPlan
     summary: PerformOpsSummary
@@ -69,6 +70,6 @@ class PerformOpsResult:
         return self.summary.summary
 
     @property
-    def severity(self) -> PerfromOpsSeverity:
+    def severity(self) -> PerformOpsSeverity:
         return self.summary.severity
 

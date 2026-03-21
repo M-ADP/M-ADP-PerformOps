@@ -23,7 +23,7 @@ class PerformOpsCore:
     async def start(
             self,
             project_id : int,
-            app_deployment_name : int,
+            app_deployment_name : str,
     ) -> PerformOpsResult:
         # 원인 분석
         analysis_result = await self._analysis.analyze(

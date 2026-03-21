@@ -4,10 +4,10 @@ from typing import Any, Generic, TypeVar
 
 from src.core.performops.model import (
     PerformOpsAnalysisResult,
-    PerformOpsanalysisResource,
+    PerformOpsAnalysisResource,
     PerformOpsPlan,
     PerformOpsSummary,
-    PerfromOpsSeverity,
+    PerformOpsSeverity,
     PlanSet,
     TrackingMetric,
 )
@@ -28,7 +28,7 @@ class AnalysisResultOutputParser(OutputParser[PerformOpsAnalysisResult]):
         parsed = json.loads(response)
         return PerformOpsAnalysisResult(
             result=parsed["result"],
-            resource=PerformOpsanalysisResource(
+            resource=PerformOpsAnalysisResource(
                 project_resource=TrackingMetric(**parsed["project_resource"]),
                 app_deployment_resource=TrackingMetric(**parsed["app_deployment_resource"]),
                 deployment_status=TrackingMetric(**parsed["deployment_status"]),
@@ -54,5 +54,5 @@ class SummaryOutputParser(OutputParser[PerformOpsSummary]):
         parsed = json.loads(response)
         return PerformOpsSummary(
             summary=parsed["summary"],
-            severity=PerfromOpsSeverity(parsed["severity"]),
+            severity=PerformOpsSeverity(parsed["severity"]),
         )
