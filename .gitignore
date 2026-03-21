@@ -63,3 +63,4 @@ MANIFEST
 # FastAPI / Uvicorn
 *.pid
 .claude
+.env
