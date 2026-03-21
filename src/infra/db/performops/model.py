@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import BigInteger, String, DateTime
+from sqlalchemy import BigInteger, String, DateTime, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.infra.db.base_entity import Base
@@ -18,9 +18,9 @@ class PerformOps(Base):
 
     app_deployment_name: Mapped[str] = mapped_column(String, nullable=False)
 
-    summary: Mapped[str] = mapped_column(String(255))
-    influence: Mapped[str] = mapped_column(String(255))
-    cause: Mapped[str] = mapped_column(String(255))
+    summary: Mapped[str] = mapped_column(Text)
+    influence: Mapped[str] = mapped_column(Text)
+    cause: Mapped[str] = mapped_column(Text)
     severity: Mapped[str] = mapped_column(String(50), nullable=False)
 
     created_at: Mapped[datetime] = mapped_column(
