@@ -1,7 +1,11 @@
 from abc import ABC, abstractmethod
 
+from src.core.performops.repository import PerformopsRepository
+
 
 class UnitOfWork(ABC):
+
+    performops: PerformopsRepository
 
     @abstractmethod
     async def __aenter__(self):

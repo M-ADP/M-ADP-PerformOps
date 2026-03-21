@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List
 
 from src.common.schema import CursorPage, CursorRequest
-from src.core.performops.model import Performops
+from src.core.performops.model import Performops, PerformOpsResult
 
 
 class PerformopsRepository(ABC):
@@ -12,5 +12,5 @@ class PerformopsRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def save(self, performops: Performops) -> Performops:
+    async def save(self, performops_result: PerformOpsResult) -> Performops:
         raise NotImplementedError
