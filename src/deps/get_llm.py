@@ -1,7 +1,8 @@
-from src.core.llm import LLM, FakeLLM
+from src.core.llm import LLM
+from src.infra.llm.openrouter import OpenRouterLLM
 
 
 def get_llm(
         template: str = None,
 ) -> LLM:
-    return FakeLLM(template=template)
+    return OpenRouterLLM(template=template)
