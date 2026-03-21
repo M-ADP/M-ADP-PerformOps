@@ -10,9 +10,9 @@ class PrometheusMetricsAnalyzer(MetricsAnalyzer):
         self._base_url = PrometheusConfig.URL
 
     async def _query(self, promql: str):
-        return await self._requester.post(
+        return await self._requester.get(
             url=f"{self._base_url}/api/v1/query",
-            body={"query": promql},
+            params={"query": promql},
         )
 
     async def get_app_deployment_traffic(
