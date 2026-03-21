@@ -7,6 +7,7 @@ from src.infra.client.http_requester import HttpRequester
 from src.infra.client.prometheus_metrics_analyzer import PrometheusMetricsAnalyzer
 from src.infra.client.resource_manager_workload_state_analyzer import ResourceManagerWorkLoadStateAnalyzer
 from src.infra.performops_analysis import PerformOpsAnalysisImpl
+from src.infra.performops_planner import PerformOpsPlannerImpl
 
 
 async def get_performops_core() -> PerformOpsCore:
@@ -29,7 +30,7 @@ async def get_performops_analysis() -> PerformOpsAnalysis:
     )
 
 async def get_performops_planner() -> PerformOpsPlanner:
-    return PerformOpsPlannerImpl()
+    return PerformOpsPlannerImpl(llm=get_llm())
 
 async def get_performops_summarizer() -> PerformOpsSummarizer:
     return PerformOpsSummarizerImpl()
