@@ -19,7 +19,7 @@ class PerformOps(Base):
     summary: Mapped[str] = mapped_column(String(255))
     influence: Mapped[str] = mapped_column(String(255))
     cause: Mapped[str] = mapped_column(String(255))
-    severity: Mapped[str] = mapped_column(String(50))
+    severity: Mapped[str] = mapped_column(String(50), nullable=False)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime,

@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.common.schema import CursorPage, CursorRequest
-from src.core.performops.model import Performops
+from src.core.performops.model import Performops, PerformOpsResult
 from src.core.performops.repository import PerformopsRepository
 from src.infra.db.performops.model import PerformOps
 
@@ -30,8 +30,8 @@ class PerformopsRepositoryImpl(PerformopsRepository):
 
         return CursorPage(items=items, has_next=has_next)
 
-    async def save(self, performops: Performops) -> Performops:
-        model = self._to_model(performops)
+    async def save(self, performops_result: PerformOpsResult) -> Performops:
+        model = self._to_model(performops_result)
         self.session.add(model)
         await self.session.flush()
         return self._to_domain(model)
@@ -48,12 +48,12 @@ class PerformopsRepositoryImpl(PerformopsRepository):
             created_at=model.created_at,
         )
 
-    def _to_model(self, performops: Performops) -> PerformOps:
+    def _to_model(self, performops_result: PerformOpsResult) -> PerformOps:
         return PerformOps(
-            project_id=performops.project_id,
-            deployment_id=performops.deployment_id,
-            summary=performops.summary,
-            influence=performops.influence,
-            cause=performops.cause,
-            severity=performops.severity,
+            project_id=performops_result.project_id,
+            deployment_id=performops_result.app_deployment_id,
+            summary=performops_result.summary_text,
+            severity=performops_result.severity,
+            influence=performops_result.analysis_result,
+            cause=performops_result.analysis_result,
         )
