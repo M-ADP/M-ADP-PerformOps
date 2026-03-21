@@ -1,0 +1,12 @@
+import aiohttp
+
+from src.core.requester import Requester
+
+
+class HttpRequester(Requester):
+
+    async def post(self, url: str, body=None, **kwargs):
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, json=body, **kwargs) as response:
+                response.raise_for_status()
+                return await response.json()
