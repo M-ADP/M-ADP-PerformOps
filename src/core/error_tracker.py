@@ -7,7 +7,7 @@ class ErrorTracker(ABC):
     async def get_error(
             self,
             project_id : int,
-            app_deployment_id : int
+            app_deployment_name : int
     ):
         raise NotImplementedError
 

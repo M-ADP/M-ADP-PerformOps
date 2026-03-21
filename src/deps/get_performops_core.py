@@ -2,6 +2,7 @@ from src.core.performops.analysis import PerformOpsAnalysis
 from src.core.performops.core import PerformOpsCore
 from src.core.performops.planner import PerformOpsPlanner
 from src.core.performops.summarizer import PerformOpsSummarizer
+from src.deps.get_error_tracker import get_error_tracker
 
 
 async def get_performops_core() -> PerformOpsCore:
@@ -16,7 +17,9 @@ async def get_performops_core() -> PerformOpsCore:
     )
 
 async def get_performops_analysis() -> PerformOpsAnalysis:
-    return PerformOpsAnalysisImpl()
+    error_tracker = await get_error_tracker()
+
+    return PerformOpsAnalysisImpl(error_tracker=error_tracker)
 
 async def get_performops_planner() -> PerformOpsPlanner:
     return PerformOpsPlannerImpl()

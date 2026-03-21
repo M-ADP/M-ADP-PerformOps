@@ -23,12 +23,12 @@ class PerformOpsCore:
     async def start(
             self,
             project_id : int,
-            app_deployment_id : int,
+            app_deployment_name : int,
     ) -> PerformOpsResult:
         # 원인 분석
         analysis_result = await self._analysis.analyze(
             project_id=project_id,
-            app_deployment_id=app_deployment_id,
+            app_deployment_name=app_deployment_name,
         )
 
         # 계획 수립
@@ -42,7 +42,7 @@ class PerformOpsCore:
 
         return PerformOpsResult(
             project_id=project_id,
-            app_deployment_id=app_deployment_id,
+            app_deployment_name=app_deployment_name,
             analysis_result=analysis_result,
             plan=plan,
             summary=summary

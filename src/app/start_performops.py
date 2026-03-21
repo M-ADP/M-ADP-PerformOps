@@ -19,11 +19,11 @@ class StartPerformopsListUseCase(BaseUseCase):
     async def __call__(
             self,
             project_id: int,
-            app_deployment_id: int
+            app_deployment_name: int
     ) -> PerformOpsResult:
         performops_result = await self.performops_core.start(
             project_id=project_id,
-            app_deployment_id=app_deployment_id
+            app_deployment_name=app_deployment_name
         )
 
         await self.uow.performops.save(performops_result)

@@ -40,7 +40,7 @@ class PerformopsRepositoryImpl(PerformopsRepository):
         return Performops(
             id=model.id,
             project_id=model.project_id,
-            deployment_id=model.deployment_id,
+            app_deployment_name=model.app_deployment_name,
             summary=model.summary,
             influence=model.influence,
             cause=model.cause,
@@ -51,7 +51,7 @@ class PerformopsRepositoryImpl(PerformopsRepository):
     def _to_model(self, performops_result: PerformOpsResult) -> PerformOps:
         return PerformOps(
             project_id=performops_result.project_id,
-            deployment_id=performops_result.app_deployment_id,
+            app_deployment_name=performops_result.app_deployment_name,
             summary=performops_result.summary_text,
             severity=performops_result.severity,
             influence=performops_result.analysis_result,

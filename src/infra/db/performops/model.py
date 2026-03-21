@@ -10,11 +10,7 @@ class PerformOps(Base):
         nullable=False
     )
 
-    deployment_id: Mapped[int] = mapped_column(
-        BigInteger,
-        ForeignKey("deployment.id"),
-        nullable=False
-    )
+    app_deployment_name: Mapped[str] = mapped_column(String, nullable=False)
 
     summary: Mapped[str] = mapped_column(String(255))
     influence: Mapped[str] = mapped_column(String(255))

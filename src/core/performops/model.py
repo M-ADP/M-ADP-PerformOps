@@ -7,7 +7,7 @@ from typing import List
 @dataclass
 class Performops:
     project_id: int
-    deployment_id: int
+    app_deployment_name: int
     summary: str
     influence: str
     cause: str
@@ -53,7 +53,7 @@ class PerformOpsSummary:
 @dataclass
 class PerformOpsResult:
     project_id: int
-    app_deployment_id: int
+    app_deployment_name: int
     analysis_result: PerformOpsAnalysisResult
     plan: PerformOpsPlan
     summary: PerformOpsSummary

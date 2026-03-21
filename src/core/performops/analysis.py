@@ -1,19 +1,26 @@
 from abc import ABC, abstractmethod
 
-from fastapi import Depends
-
+from src.core.analyzer.metrics import MetricsAnalyzer
+from src.core.analyzer.workload_state import WorkLoadStateAnalyzer
 from src.core.error_tracker import ErrorTracker
 from src.core.performops.model import PerformOpsAnalysisResult
-from src.deps.get_error_tracker import get_error_tracker
-
 
 class PerformOpsAnalysis(ABC):
+
+    def __init__(
+            self,
+            error_tracker: ErrorTracker,
+            metrics_analyzer: MetricsAnalyzer,
+            workload_state_analyzer : WorkLoadStateAnalyzer
+    ):
+        self._error_tracker = error_tracker
+        self._metrics_analyzer = metrics_analyzer
+        self._workload_state_analyzer = workload_state_analyzer
 
     @abstractmethod
     async def analyze(
             self,
             project_id : int,
-            app_deployment_id : int,
-            error_tracker : ErrorTracker = Depends(get_error_tracker),
+            app_deployment_name : int,
     ) -> PerformOpsAnalysisResult:
         raise NotImplementedError
