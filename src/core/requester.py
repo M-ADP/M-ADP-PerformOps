@@ -5,5 +5,9 @@ from typing import Any
 class Requester(ABC):
 
     @abstractmethod
+    async def get(self, url: str, **kwargs) -> Any:
+        raise NotImplementedError
+
+    @abstractmethod
     async def post(self, url: str, body: Any = None, **kwargs) -> Any:
         raise NotImplementedError
