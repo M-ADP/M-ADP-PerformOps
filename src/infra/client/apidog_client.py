@@ -34,6 +34,8 @@ class ApidogClient:
             for api in apis:
                 if api.get("method", "").lower() not in _WRITE_METHODS:
                     continue
+                if api.get("path", "").startswith("/resource"):
+                    continue
                 actions.append(UserAction(
                     method=api["method"].upper(),
                     path=api["path"],

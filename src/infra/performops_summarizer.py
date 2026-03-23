@@ -22,9 +22,10 @@ SUMMARY_PROMPT = """아래는 성능 이상 분석 결과와 조치 계획입니
 
 위 내용을 바탕으로 전체 요약과 심각도를 아래 JSON 형식으로만 반환하세요.
 심각도는 "low", "medium", "high" 중 하나입니다.
+summary에는 현재 상황과 함께 사용자가 취해야 할 조치(user action 포함)를 반드시 포함하세요.
 
 {{
-  "summary": "전체 상황 요약",
+  "summary": "전체 상황 요약 및 사용자 조치 안내",
   "severity": "low | medium | high"
 }}"""
 
@@ -40,9 +41,12 @@ class PerformOpsSummarizerImpl(PerformOpsSummarizer):
             analysis_result: PerformOpsAnalysisResult,
             plan: PerformOpsPlan,
     ) -> PerformOpsSummary:
-        plans_text = "\n".join(
-            f"- {p.plan} (이유: {p.reason})" for p in plan.plans
-        )
+        def format_plan(p):
+            if p.user_action:
+                return f"- {p.plan} (이유: {p.reason}) → {p.user_action.method} {p.user_action.path}"
+            return f"- {p.plan} (이유: {p.reason})"
+
+        plans_text = "\n".join(format_plan(p) for p in plan.plans)
 
         response = await self._llm.chat(
             variables=[
