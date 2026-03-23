@@ -43,7 +43,7 @@ class PerformOpsSummarizerImpl(PerformOpsSummarizer):
     ) -> PerformOpsSummary:
         def format_plan(p):
             if p.user_action:
-                return f"- {p.plan} (이유: {p.reason}) → {p.user_action.method} {p.user_action.path}"
+                return f"- {p.plan} (이유: {p.reason}) → {p.user_action.summary}"
             return f"- {p.plan} (이유: {p.reason})"
 
         plans_text = "\n".join(format_plan(p) for p in plan.plans)
