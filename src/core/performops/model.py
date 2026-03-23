@@ -2,7 +2,7 @@ from dataclasses import field
 from pydantic.dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import List
+from typing import List, Optional
 
 
 
@@ -39,9 +39,17 @@ class PerformOpsAnalysisResult:
 
 
 @dataclass
+class UserAction:
+    method: str
+    path: str
+    summary: str
+
+
+@dataclass
 class PlanSet:
-    plan : str
-    reason : str
+    plan: str
+    reason: str
+    user_action: Optional[UserAction] = None
 
 @dataclass
 class PerformOpsPlan:

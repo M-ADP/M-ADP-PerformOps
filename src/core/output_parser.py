@@ -14,6 +14,7 @@ from src.core.performops.model import (
     PerformOpsSeverity,
     PlanSet,
     TrackingMetric,
+    UserAction,
 )
 
 T = TypeVar("T")
@@ -56,9 +57,16 @@ class PlanOutputParser(OutputParser[PerformOpsPlan]):
 
     def parse(self, response: str) -> PerformOpsPlan:
         parsed = self._extract_json(response)
-        return PerformOpsPlan(
-            plans=[PlanSet(**p) for p in parsed["plans"]],
-        )
+        plans = []
+        for p in parsed["plans"]:
+            raw_action = p.get("user_action")
+            user_action = UserAction(**raw_action) if raw_action else None
+            plans.append(PlanSet(
+                plan=p["plan"],
+                reason=p["reason"],
+                user_action=user_action,
+            ))
+        return PerformOpsPlan(plans=plans)
 
 
 class SummaryOutputParser(OutputParser[PerformOpsSummary]):
