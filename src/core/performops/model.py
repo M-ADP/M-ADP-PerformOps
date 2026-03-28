@@ -5,6 +5,14 @@ from enum import Enum
 from typing import List, Optional
 
 
+@dataclass
+class PerformOpsAction:
+    action: str
+    state: str
+    performops_id: int | None = None
+    id: int | None = None
+    created_at: datetime = field(default_factory=datetime.utcnow)
+
 
 @dataclass
 class Performops:
@@ -16,12 +24,15 @@ class Performops:
     severity: str
     id: int | None = None
     created_at: datetime = field(default_factory=datetime.utcnow)
+    actions: List[PerformOpsAction] = field(default_factory=list)
+
 
 @dataclass
 class TrackingMetric:
-      state: str    # 현재 상태
-      change: str   # n분간 변화
-      basis: str    # 판단 근거
+    state: str  # 현재 상태
+    change: str  # n분간 변화
+    basis: str  # 판단 근거
+
 
 @dataclass
 class PerformOpsAnalysisResource:
@@ -32,10 +43,11 @@ class PerformOpsAnalysisResource:
     traffic: TrackingMetric
     latency: TrackingMetric
 
+
 @dataclass
 class PerformOpsAnalysisResult:
-    result : str
-    resource : PerformOpsAnalysisResource
+    result: str
+    resource: PerformOpsAnalysisResource
 
 
 @dataclass
@@ -46,24 +58,28 @@ class UserAction:
 
 
 @dataclass
-class PlanSet:
-    plan: str
+class PlanAction:
+    action: str
     reason: str
     user_action: Optional[UserAction] = None
 
+
 @dataclass
 class PerformOpsPlan:
-    plans : List[PlanSet]
+    actions: List[PlanAction]
+
 
 class PerformOpsSeverity(str, Enum):
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
 
+
 @dataclass
 class PerformOpsSummary:
-    summary : str
-    severity : PerformOpsSeverity
+    summary: str
+    severity: PerformOpsSeverity
+
 
 @dataclass
 class PerformOpsResult:
@@ -80,4 +96,3 @@ class PerformOpsResult:
     @property
     def severity(self) -> PerformOpsSeverity:
         return self.summary.severity
-

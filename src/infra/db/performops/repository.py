@@ -1,20 +1,22 @@
-from typing import List
-
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.common.schema import CursorPage, CursorRequest
-from src.core.performops.model import Performops, PerformOpsResult
+from src.core.performops.model import Performops, PerformOpsResult, PerformOpsAction
 from src.core.performops.repository import PerformopsRepository
-from src.infra.db.performops.model import PerformOps
+from src.infra.db.performops.model import (
+    PerformOps,
+    PerformOpsAction as PerformOpsActionORM,
+)
 
 
 class PerformopsRepositoryImpl(PerformopsRepository):
-
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def get_by_project_id(self, project_id: int, cursor_request: CursorRequest) -> CursorPage[Performops]:
+    async def get_by_project_id(
+        self, project_id: int, cursor_request: CursorRequest
+    ) -> CursorPage[Performops]:
         query = select(PerformOps).where(PerformOps.project_id == project_id)
 
         if cursor_request.cursor is not None:
@@ -26,7 +28,7 @@ class PerformopsRepositoryImpl(PerformopsRepository):
         rows = result.scalars().all()
 
         has_next = len(rows) > cursor_request.size
-        items = [self._to_domain(row) for row in rows[:cursor_request.size]]
+        items = [self._to_domain(row) for row in rows[: cursor_request.size]]
 
         return CursorPage(items=items, has_next=has_next)
 
@@ -37,6 +39,16 @@ class PerformopsRepositoryImpl(PerformopsRepository):
         return self._to_domain(model)
 
     def _to_domain(self, model: PerformOps) -> Performops:
+        actions = [
+            PerformOpsAction(
+                id=a.id,
+                performops_id=a.performops_id,
+                action=a.action,
+                state=a.state,
+                created_at=a.created_at,
+            )
+            for a in model.actions
+        ]
         return Performops(
             id=model.id,
             project_id=model.project_id,
@@ -46,9 +58,17 @@ class PerformopsRepositoryImpl(PerformopsRepository):
             cause=model.cause,
             severity=model.severity,
             created_at=model.created_at,
+            actions=actions,
         )
 
     def _to_model(self, performops_result: PerformOpsResult) -> PerformOps:
+        actions = [
+            PerformOpsActionORM(
+                action=plan_action.action,
+                state="pending",
+            )
+            for plan_action in performops_result.plan.actions
+        ]
         return PerformOps(
             project_id=performops_result.project_id,
             app_deployment_name=performops_result.app_deployment_name,
@@ -56,4 +76,5 @@ class PerformopsRepositoryImpl(PerformopsRepository):
             severity=performops_result.severity,
             influence=performops_result.analysis_result.resource.traffic.basis,
             cause=performops_result.analysis_result.result,
+            actions=actions,
         )

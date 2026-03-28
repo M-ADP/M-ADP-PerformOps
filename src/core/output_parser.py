@@ -12,16 +12,16 @@ from src.core.performops.model import (
     PerformOpsPlan,
     PerformOpsSummary,
     PerformOpsSeverity,
-    PlanSet,
+    PlanAction,
     TrackingMetric,
     UserAction,
 )
+
 
 T = TypeVar("T")
 
 
 class OutputParser(ABC, Generic[T]):
-
     @abstractmethod
     def parse(self, response: str) -> T:
         raise NotImplementedError
@@ -32,19 +32,22 @@ class OutputParser(ABC, Generic[T]):
         try:
             return json.loads(cleaned)
         except json.JSONDecodeError as e:
-            logger.error(f"[OutputParser] JSON parse failed. response={response!r}, error={e}")
+            logger.error(
+                f"[OutputParser] JSON parse failed. response={response!r}, error={e}"
+            )
             raise
 
 
 class AnalysisResultOutputParser(OutputParser[PerformOpsAnalysisResult]):
-
     def parse(self, response: str) -> PerformOpsAnalysisResult:
         parsed = self._extract_json(response)
         return PerformOpsAnalysisResult(
             result=parsed["result"],
             resource=PerformOpsAnalysisResource(
                 project_resource=TrackingMetric(**parsed["project_resource"]),
-                app_deployment_resource=TrackingMetric(**parsed["app_deployment_resource"]),
+                app_deployment_resource=TrackingMetric(
+                    **parsed["app_deployment_resource"]
+                ),
                 deployment_status=TrackingMetric(**parsed["deployment_status"]),
                 pod_log=TrackingMetric(**parsed["pod_log"]),
                 traffic=TrackingMetric(**parsed["traffic"]),
@@ -54,23 +57,23 @@ class AnalysisResultOutputParser(OutputParser[PerformOpsAnalysisResult]):
 
 
 class PlanOutputParser(OutputParser[PerformOpsPlan]):
-
     def parse(self, response: str) -> PerformOpsPlan:
         parsed = self._extract_json(response)
-        plans = []
-        for p in parsed["plans"]:
-            raw_action = p.get("user_action")
+        actions = []
+        for a in parsed["actions"]:
+            raw_action = a.get("user_action")
             user_action = UserAction(**raw_action) if raw_action else None
-            plans.append(PlanSet(
-                plan=p["plan"],
-                reason=p["reason"],
-                user_action=user_action,
-            ))
-        return PerformOpsPlan(plans=plans)
+            actions.append(
+                PlanAction(
+                    action=a["action"],
+                    reason=a["reason"],
+                    user_action=user_action,
+                )
+            )
+        return PerformOpsPlan(actions=actions)
 
 
 class SummaryOutputParser(OutputParser[PerformOpsSummary]):
-
     def parse(self, response: str) -> PerformOpsSummary:
         parsed = self._extract_json(response)
         return PerformOpsSummary(

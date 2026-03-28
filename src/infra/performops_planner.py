@@ -20,22 +20,23 @@ PLAN_PROMPT = """아래는 성능 이상 원인 분석 결과입니다.
 - 트래픽: {traffic}
 - 지연 시간: {latency}
 
-## 사용 가능한 User Action
+## 사용 가능한 Resource Manager Action
 {user_actions}
 
-위 분석 결과를 바탕으로, 사용 가능한 User Action 목록에서 적절한 액션을 선택하여 조치 계획을 수립하세요.
-반드시 사용 가능한 User Action이 있는 조치만 포함하세요. 대응하는 User Action이 없는 조치는 plan에 포함하지 마세요.
+당신은 Kubernetes 클러스터 관리자입니다.
+위 분석 결과를 바탕으로, 위에 나열된 Resource Manager Action 중에서 적절한 것을 선택해 조치 계획을 수립하세요.
+반드시 사용 가능한 Action이 있는 조치만 포함하세요. 대응하는 Action이 없는 조치는 포함하지 마세요.
 
 아래 JSON 형식으로만 반환하세요.
 
 {{
-  "plans": [
+  "actions": [
     {{
-      "plan": "조치 내용",
+      "action": "조치 내용 (예: app-backend의 메모리 limit을 512Mi에서 1Gi로 증설)",
       "reason": "해당 조치가 필요한 이유",
       "user_action": {{
         "method": "PATCH",
-        "path": "/apps/{{project-id}}/{{name}}",
+        "path": "/resource/apps/{{project-id}}/{{name}}",
         "summary": "앱 배포 수정"
       }}
     }}
@@ -44,18 +45,20 @@ PLAN_PROMPT = """아래는 성능 이상 원인 분석 결과입니다.
 
 
 class PerformOpsPlannerImpl(PerformOpsPlanner):
-
     def __init__(self, llm: LLM = None):
         self._llm = llm or get_llm(template=PLAN_PROMPT)
         self._parser = PlanOutputParser()
 
     async def plan(
-            self,
-            analysis_result: PerformOpsAnalysisResult,
+        self,
+        analysis_result: PerformOpsAnalysisResult,
     ) -> PerformOpsPlan:
         user_actions = UserActionStore.get()
         user_actions_json = json.dumps(
-            [{"method": a.method, "path": a.path, "summary": a.summary} for a in user_actions],
+            [
+                {"method": a.method, "path": a.path, "summary": a.summary}
+                for a in user_actions
+            ],
             ensure_ascii=False,
             indent=2,
         )

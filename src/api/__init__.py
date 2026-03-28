@@ -30,7 +30,9 @@ def register_routers(app: FastAPI) -> None:
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(JSONDecodeError)
     async def json_decode_exception_handler(request: Request, exc: JSONDecodeError):
-        return JSONResponse(status_code=500, content={"detail": f"LLM 응답 파싱 실패: {exc}"})
+        return JSONResponse(
+            status_code=500, content={"detail": f"LLM 응답 파싱 실패: {exc}"}
+        )
 
     @app.exception_handler(Exception)
     async def generic_exception_handler(request: Request, exc: Exception):

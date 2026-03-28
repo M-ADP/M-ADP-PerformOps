@@ -13,7 +13,6 @@ _WRITE_METHODS = {"post", "put", "patch", "delete"}
 
 
 class ApidogClient:
-
     def __init__(self, requester: HttpRequester = None):
         self._requester = requester or HttpRequester()
         self._token = ApidogConfig.TOKEN
@@ -34,13 +33,15 @@ class ApidogClient:
             for api in apis:
                 if api.get("method", "").lower() not in _WRITE_METHODS:
                     continue
-                if api.get("path", "").startswith("/resource"):
+                if not api.get("path", "").startswith("/resource"):
                     continue
-                actions.append(UserAction(
-                    method=api["method"].upper(),
-                    path=api["path"],
-                    summary=api.get("name", ""),
-                ))
+                actions.append(
+                    UserAction(
+                        method=api["method"].upper(),
+                        path=api["path"],
+                        summary=api.get("name", ""),
+                    )
+                )
 
             if len(apis) < _PAGE_SIZE:
                 break
