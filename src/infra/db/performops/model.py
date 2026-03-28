@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 
 from sqlalchemy import BigInteger, String, DateTime, Text, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -43,6 +44,11 @@ class PerformOpsAction(Base):
 
     action: Mapped[str] = mapped_column(Text)
     state: Mapped[str] = mapped_column(String(50), nullable=False)
+
+    # 실행에 필요한 Resource Manager API 정보
+    http_method: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
+    http_path: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    http_body: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, nullable=False

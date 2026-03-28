@@ -45,6 +45,9 @@ class PerformopsRepositoryImpl(PerformopsRepository):
                 performops_id=a.performops_id,
                 action=a.action,
                 state=a.state,
+                http_method=a.http_method,
+                http_path=a.http_path,
+                http_body=a.http_body,
                 created_at=a.created_at,
             )
             for a in model.actions
@@ -66,6 +69,9 @@ class PerformopsRepositoryImpl(PerformopsRepository):
             PerformOpsActionORM(
                 action=plan_action.action,
                 state="pending",
+                http_method=plan_action.http_method or None,
+                http_path=plan_action.http_path or None,
+                http_body=plan_action.http_body or None,
             )
             for plan_action in performops_result.plan.actions
         ]

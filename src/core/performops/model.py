@@ -11,6 +11,9 @@ class PerformOpsAction:
     state: str
     performops_id: int | None = None
     id: int | None = None
+    http_method: str | None = None
+    http_path: str | None = None
+    http_body: str | None = None
     created_at: datetime = field(default_factory=datetime.utcnow)
 
 
@@ -58,9 +61,22 @@ class UserAction:
 
 
 @dataclass
+class AbstractPlan:
+    """1단계: 자연어 조치 목록"""
+
+    action: str  # 조치 내용
+    reason: str  # 조치가 필요한 이유
+
+
+@dataclass
 class PlanAction:
+    """2단계: 실행 가능한 API 정보까지 포함된 최종 액션"""
+
     action: str
     reason: str
+    http_method: str
+    http_path: str
+    http_body: str
     user_action: Optional[UserAction] = None
 
 
