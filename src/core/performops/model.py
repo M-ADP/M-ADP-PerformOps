@@ -85,6 +85,12 @@ class PerformOpsPlan:
     actions: List[PlanAction]
 
 
+class ActionState(str, Enum):
+    PENDING = "pending"  # 실행 안됨
+    FAILED = "failed"  # 실패함
+    EXECUTED = "executed"  # 실행됨
+
+
 class PerformOpsSeverity(str, Enum):
     LOW = "low"
     MEDIUM = "medium"

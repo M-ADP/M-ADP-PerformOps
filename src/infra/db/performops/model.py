@@ -10,7 +10,7 @@ from src.infra.db.base_entity import Base
 class PerformOps(Base):
     __tablename__ = "performops"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=False)
 
     project_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
 
@@ -37,7 +37,7 @@ class PerformOps(Base):
 class PerformOpsAction(Base):
     __tablename__ = "performops_actions"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=False)
     performops_id: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("performops.id"), nullable=False
     )
