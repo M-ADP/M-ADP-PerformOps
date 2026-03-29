@@ -8,14 +8,18 @@ logger = logging.getLogger(__name__)
 
 from src.core.performops.model import (
     AbstractPlan,
+    JudgeResult,
     PerformOpsAnalysisResult,
     PerformOpsAnalysisResource,
     PerformOpsPlan,
     PerformOpsSummary,
     PerformOpsSeverity,
     PlanAction,
+    PlannerType,
     TrackingMetric,
     UserAction,
+    ValidationResult,
+    RuleCheckResult,
 )
 
 T = TypeVar("T")
@@ -150,3 +154,32 @@ class SummaryOutputParser(OutputParser[PerformOpsSummary]):
             summary=parsed["summary"],
             severity=PerformOpsSeverity(parsed["severity"]),
         )
+
+
+class JudgeOutputParser(OutputParser[JudgeResult]):
+    """
+    Judge LLM 응답 파서.
+    LLM은 아래 형식의 JSON을 반환해야 한다:
+      {"selected": "reactive" | "proactive", "reason": "..."}
+    """
+
+    def parse(self, response: str) -> JudgeResult:
+        parsed = self._extract_json(response)
+        return JudgeResult(
+            selected=PlannerType(parsed["selected"]),
+            reason=str(parsed["reason"]),
+        )
+
+
+class ValidatorOutputParser(OutputParser[tuple[bool, str]]):
+    """
+    LLM-as-Judge 응답 파서.
+    LLM은 아래 형식의 JSON을 반환해야 한다:
+      {"approved": true, "feedback": "..."}
+    """
+
+    def parse(self, response: str) -> tuple[bool, str]:
+        parsed = self._extract_json(response)
+        approved: bool = bool(parsed["approved"])
+        feedback: str = str(parsed.get("feedback", ""))
+        return approved, feedback

@@ -97,6 +97,39 @@ class PerformOpsSeverity(str, Enum):
     HIGH = "high"
 
 
+class PlannerType(str, Enum):
+    REACTIVE = "reactive"
+    PROACTIVE = "proactive"
+
+
+@dataclass
+class JudgeResult:
+    """Judge가 두 plan 중 하나를 선택한 결과"""
+
+    selected: PlannerType  # 선택된 planner 관점
+    reason: str  # 선택 이유
+
+
+@dataclass
+class RuleCheckResult:
+    """Rule-based 검증 개별 항목 결과"""
+
+    name: str  # 검증 항목명
+    passed: bool  # 통과 여부
+    score: float  # 0.0 ~ 1.0
+    detail: str  # 상세 설명
+
+
+@dataclass
+class ValidationResult:
+    """Validator 최종 판정"""
+
+    approved: bool  # 최종 통과 여부
+    feedback: str  # 재계획 시 프롬프트에 주입할 피드백
+    rule_results: List[RuleCheckResult]  # Rule-based 개별 결과
+    llm_approved: Optional[bool] = None  # LLM-as-Judge 판정 (None = rule 단계에서 차단)
+
+
 @dataclass
 class PerformOpsSummary:
     summary: str
