@@ -48,6 +48,27 @@ class PerformOpsAnalysisResource:
 
 
 @dataclass
+class InfrastructureAgentResult:
+    project_resource: TrackingMetric
+    app_deployment_resource: TrackingMetric
+    analysis: str
+
+
+@dataclass
+class ApplicationAgentResult:
+    deployment_status: TrackingMetric
+    pod_log: TrackingMetric
+    analysis: str
+
+
+@dataclass
+class TrafficAgentResult:
+    traffic: TrackingMetric
+    latency: TrackingMetric
+    analysis: str
+
+
+@dataclass
 class PerformOpsAnalysisResult:
     result: str
     resource: PerformOpsAnalysisResource

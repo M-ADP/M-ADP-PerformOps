@@ -8,6 +8,8 @@ logger = logging.getLogger(__name__)
 
 from src.core.performops.model import (
     AbstractPlan,
+    ApplicationAgentResult,
+    InfrastructureAgentResult,
     JudgeResult,
     PerformOpsAnalysisResult,
     PerformOpsAnalysisResource,
@@ -17,6 +19,7 @@ from src.core.performops.model import (
     PlanAction,
     PlannerType,
     TrackingMetric,
+    TrafficAgentResult,
     UserAction,
     ValidationResult,
     RuleCheckResult,
@@ -40,6 +43,42 @@ class OutputParser(ABC, Generic[T]):
                 f"[OutputParser] JSON parse failed. response={response!r}, error={e}"
             )
             raise
+
+
+class InfrastructureAgentOutputParser(OutputParser[InfrastructureAgentResult]):
+    def parse(self, response: str) -> InfrastructureAgentResult:
+        parsed = self._extract_json(response)
+        return InfrastructureAgentResult(
+            project_resource=TrackingMetric(**parsed["project_resource"]),
+            app_deployment_resource=TrackingMetric(**parsed["app_deployment_resource"]),
+            analysis=parsed["analysis"],
+        )
+
+
+class ApplicationAgentOutputParser(OutputParser[ApplicationAgentResult]):
+    def parse(self, response: str) -> ApplicationAgentResult:
+        parsed = self._extract_json(response)
+        return ApplicationAgentResult(
+            deployment_status=TrackingMetric(**parsed["deployment_status"]),
+            pod_log=TrackingMetric(**parsed["pod_log"]),
+            analysis=parsed["analysis"],
+        )
+
+
+class TrafficAgentOutputParser(OutputParser[TrafficAgentResult]):
+    def parse(self, response: str) -> TrafficAgentResult:
+        parsed = self._extract_json(response)
+        return TrafficAgentResult(
+            traffic=TrackingMetric(**parsed["traffic"]),
+            latency=TrackingMetric(**parsed["latency"]),
+            analysis=parsed["analysis"],
+        )
+
+
+class SynthesisOutputParser(OutputParser[str]):
+    def parse(self, response: str) -> str:
+        parsed = self._extract_json(response)
+        return str(parsed["result"])
 
 
 class AnalysisResultOutputParser(OutputParser[PerformOpsAnalysisResult]):

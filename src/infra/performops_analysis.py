@@ -1,117 +1,100 @@
 import asyncio
+import logging
 
-from src.core.analyzer.metrics import MetricsAnalyzer
-from src.core.analyzer.workload_state import WorkLoadStateAnalyzer
 from src.core.llm import LLM
-from src.core.output_parser import AnalysisResultOutputParser
+from src.core.output_parser import SynthesisOutputParser
+from src.core.performops.agents import (
+    ApplicationAgent,
+    InfrastructureAgent,
+    TrafficAgent,
+)
 from src.core.performops.analysis import PerformOpsAnalysis
-from src.core.performops.model import PerformOpsAnalysisResult
+from src.core.performops.model import (
+    PerformOpsAnalysisResource,
+    PerformOpsAnalysisResult,
+)
 from src.deps.get_llm import get_llm
 
-ANALYSIS_PROMPT = """Below is the current status data for {app_deployment_name} (project_id: {project_id}).
+logger = logging.getLogger(__name__)
 
-## Project Resource
-{project_resource}
+SYNTHESIS_PROMPT = """You are a synthesis agent. Below are analysis results from three specialized agents for {app_deployment_name} (project_id: {project_id}).
 
-## App Deployment Resource (CPU/Memory)
-CPU: {cpu}
-Memory: {memory}
-Allocation: {app_deployment_resource}
+## Infrastructure Agent
+{infrastructure_analysis}
 
-## Deployment Events
-{deployment_status}
+## Application Agent
+{application_analysis}
 
-## Pod Logs
-{pod_log}
+## Traffic Agent
+{traffic_analysis}
 
-## Traffic
-{traffic}
+Correlate findings across all three domains and produce a unified root cause analysis.
+Identify cross-domain causal chains (e.g. traffic spike → CPU saturation → pod crash).
 
-## Latency (P95 latency)
-{latency}
-
-Analyze each item for current state, change, and basis.
-Provide overall root cause analysis summary (result).
-
-IMPORTANT: Return ONLY the JSON format below. No explanations, no additional text. Use English only.
+IMPORTANT: Return ONLY the JSON below. English only.
 
 {{
-  "result": "Overall root cause analysis summary",
-  "project_resource": {{"state": "...", "change": "...", "basis": "..."}},
-  "app_deployment_resource": {{"state": "...", "change": "...", "basis": "..."}},
-  "deployment_status": {{"state": "...", "change": "...", "basis": "..."}},
-  "pod_log": {{"state": "...", "change": "...", "basis": "..."}},
-  "traffic": {{"state": "...", "change": "...", "basis": "..."}},
-  "latency": {{"state": "...", "change": "...", "basis": "..."}}
+  "result": "Unified root cause analysis integrating infrastructure, application, and traffic findings"
 }}"""
 
 
 class PerformOpsAnalysisImpl(PerformOpsAnalysis):
     def __init__(
         self,
-        metrics_analyzer: MetricsAnalyzer,
-        workload_state_analyzer: WorkLoadStateAnalyzer,
+        infrastructure_agent: InfrastructureAgent,
+        application_agent: ApplicationAgent,
+        traffic_agent: TrafficAgent,
         llm: LLM = None,
     ):
-        super().__init__(
-            metrics_analyzer=metrics_analyzer,
-            workload_state_analyzer=workload_state_analyzer,
-        )
-        self._llm = llm or get_llm(template=ANALYSIS_PROMPT)
-        self._parser = AnalysisResultOutputParser()
+        self._infrastructure_agent = infrastructure_agent
+        self._application_agent = application_agent
+        self._traffic_agent = traffic_agent
+        self._llm = llm or get_llm(template=SYNTHESIS_PROMPT)
+        self._parser = SynthesisOutputParser()
 
     async def analyze(
         self,
         project_id: int,
         app_deployment_name: str,
     ) -> PerformOpsAnalysisResult:
-        (
-            project_resource,
-            app_deployment_resource,
-            deployment_status,
-            pod_log,
-            traffic,
-            cpu,
-            memory,
-            latency,
-        ) = await asyncio.gather(
-            self._workload_state_analyzer.get_project_resource(project_id),
-            self._workload_state_analyzer.get_app_deployment_resource(
-                project_id, app_deployment_name
-            ),
-            self._workload_state_analyzer.get_app_deployment_events(
-                project_id, app_deployment_name
-            ),
-            self._workload_state_analyzer.get_app_deployment_logs(
-                project_id, app_deployment_name
-            ),
-            self._metrics_analyzer.get_app_deployment_traffic(
-                project_id, app_deployment_name
-            ),
-            self._metrics_analyzer.get_app_deployment_cpu(
-                project_id, app_deployment_name
-            ),
-            self._metrics_analyzer.get_app_deployment_memory(
-                project_id, app_deployment_name
-            ),
-            self._metrics_analyzer.get_app_deployment_latency(
-                project_id, app_deployment_name
-            ),
+        logger.info(
+            f"[PerformOpsAnalysis] Starting multi-agent analysis for "
+            f"{app_deployment_name} (project_id={project_id})"
+        )
+
+        infra_result, app_result, traffic_result = await asyncio.gather(
+            self._infrastructure_agent.analyze(project_id, app_deployment_name),
+            self._application_agent.analyze(project_id, app_deployment_name),
+            self._traffic_agent.analyze(project_id, app_deployment_name),
+        )
+
+        logger.info(
+            f"[PerformOpsAnalysis] Agents done — "
+            f"infra={infra_result.analysis!r:.80} "
+            f"app={app_result.analysis!r:.80} "
+            f"traffic={traffic_result.analysis!r:.80}"
         )
 
         response = await self._llm.chat(
             variables=[
                 app_deployment_name,
                 project_id,
-                project_resource,
-                cpu,
-                memory,
-                app_deployment_resource,
-                deployment_status,
-                pod_log,
-                traffic,
-                latency,
+                infra_result.analysis,
+                app_result.analysis,
+                traffic_result.analysis,
             ],
         )
 
-        return self._parser.parse(response)
+        result_text = self._parser.parse(response)
+
+        return PerformOpsAnalysisResult(
+            result=result_text,
+            resource=PerformOpsAnalysisResource(
+                project_resource=infra_result.project_resource,
+                app_deployment_resource=infra_result.app_deployment_resource,
+                deployment_status=app_result.deployment_status,
+                pod_log=app_result.pod_log,
+                traffic=traffic_result.traffic,
+                latency=traffic_result.latency,
+            ),
+        )
