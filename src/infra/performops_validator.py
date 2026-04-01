@@ -17,37 +17,37 @@ logger = logging.getLogger(__name__)
 # ── Rule-based 임계값 ────────────────────────────────────────────────────────
 API_RESOLVE_RATE_THRESHOLD = 0.8  # http_method 채워진 액션 비율
 MIN_ACTION_COUNT = 1  # 최소 액션 수
-DANGER_STATES = {"위험", "critical", "oomkill", "oom", "throttle", "오류", "error"}
+DANGER_STATES = {"danger", "critical", "oomkill", "oom", "throttle", "error"}
 
 # ── LLM-as-Judge 프롬프트 ───────────────────────────────────────────────────
-JUDGE_PROMPT = """당신은 Kubernetes 성능 운영 시스템의 검증 전문가입니다.
-아래 분석 결과와 조치 계획의 일관성을 평가하세요.
+JUDGE_PROMPT = """You are a validation expert for a Kubernetes performance operations system.
+Evaluate the consistency between the analysis result and the action plan below.
 
-## 원인 분석 결과
+## Analysis Result
 {analysis_result}
 
-## 리소스 상태 요약
-- 프로젝트 리소스: {project_resource}
-- App Deployment 리소스: {app_deployment_resource}
-- Deployment 상태: {deployment_status}
-- Pod 로그: {pod_log}
-- 트래픽: {traffic}
-- 지연 시간: {latency}
+## Resource Status Summary
+- Project Resource: {project_resource}
+- App Deployment Resource: {app_deployment_resource}
+- Deployment Status: {deployment_status}
+- Pod Log: {pod_log}
+- Traffic: {traffic}
+- Latency: {latency}
 
-## 조치 계획
+## Action Plan
 {plan_actions}
 
-## 평가 기준
-1. 조치 계획이 분석에서 지적한 문제를 실제로 다루고 있는가?
-2. 각 조치의 이유(reason)가 분석 결과와 논리적으로 연결되는가?
-3. 분석에서 지적된 주요 문제 중 계획에서 누락된 것이 없는가?
+## Evaluation Criteria
+1. Does the action plan address the problems identified in the analysis?
+2. Is the reason for each action logically connected to the analysis result?
+3. Are there any major issues from the analysis that are missing from the plan?
 
-위 기준을 바탕으로 평가하고, 아래 JSON 형식으로만 반환하세요.
-approved가 false인 경우 feedback에 구체적으로 어떤 점이 부족한지, 재계획 시 무엇을 반드시 포함해야 하는지 작성하세요.
+IMPORTANT: Return ONLY the JSON format below. No explanations, no additional text. Use English only.
+If approved is false, include specific feedback on what is lacking and what must be included in the revised plan.
 
 {{
   "approved": true,
-  "feedback": "승인된 경우 빈 문자열, 거절된 경우 구체적인 개선 요구사항"
+  "feedback": "Empty string if approved, specific improvement requirements if rejected"
 }}"""
 
 
@@ -57,8 +57,8 @@ def _format_plan_for_judge(plan: PerformOpsPlan) -> str:
         api_info = ""
         if action.http_method and action.http_path:
             api_info = f" → {action.http_method} {action.http_path}"
-        lines.append(f"{i}. {action.action} (이유: {action.reason}){api_info}")
-    return "\n".join(lines) if lines else "(계획 없음)"
+        lines.append(f"{i}. {action.action} (reason: {action.reason}){api_info}")
+    return "\n".join(lines) if lines else "(no plan)"
 
 
 class PerformOpsValidatorImpl(PerformOpsValidator):
@@ -136,7 +136,7 @@ class PerformOpsValidatorImpl(PerformOpsValidator):
                 name="api_resolve_rate",
                 passed=False,
                 score=0.0,
-                detail="액션이 없어 API 해석률 계산 불가",
+                detail="No actions found, API resolve rate cannot be calculated",
             )
         resolved = sum(1 for a in plan.actions if a.http_method)
         rate = resolved / total
@@ -146,8 +146,12 @@ class PerformOpsValidatorImpl(PerformOpsValidator):
             passed=passed,
             score=rate,
             detail=(
-                f"API 해석률 {rate:.0%} ({resolved}/{total})"
-                + ("" if passed else f" — 기준 {API_RESOLVE_RATE_THRESHOLD:.0%} 미달")
+                f"API resolve rate {rate:.0%} ({resolved}/{total})"
+                + (
+                    ""
+                    if passed
+                    else f" — below threshold {API_RESOLVE_RATE_THRESHOLD:.0%}"
+                )
             ),
         )
 
@@ -160,8 +164,8 @@ class PerformOpsValidatorImpl(PerformOpsValidator):
             passed=passed,
             score=min(count / MIN_ACTION_COUNT, 1.0),
             detail=(
-                f"액션 수 {count}개"
-                + ("" if passed else f" — 최소 {MIN_ACTION_COUNT}개 필요")
+                f"Action count: {count}"
+                + ("" if passed else f" — minimum {MIN_ACTION_COUNT} required")
             ),
         )
 
@@ -181,9 +185,9 @@ class PerformOpsValidatorImpl(PerformOpsValidator):
             passed=passed,
             score=0.0 if duplicates else 1.0,
             detail=(
-                "중복 액션 없음"
+                "No duplicate actions"
                 if passed
-                else f"중복 액션 발견: {', '.join(set(duplicates))}"
+                else f"Duplicate actions found: {', '.join(set(duplicates))}"
             ),
         )
 
@@ -215,7 +219,7 @@ class PerformOpsValidatorImpl(PerformOpsValidator):
                 name="severity_consistency",
                 passed=False,
                 score=0.0,
-                detail="위험 상태가 감지되었으나 조치 계획이 없음",
+                detail="Danger state detected but no action plan exists",
             )
 
         return RuleCheckResult(
@@ -223,9 +227,9 @@ class PerformOpsValidatorImpl(PerformOpsValidator):
             passed=True,
             score=1.0,
             detail=(
-                "위험 상태 감지 → 조치 계획 존재"
+                "Danger state detected — action plan exists"
                 if has_danger
-                else "위험 상태 없음 — 일관성 검사 해당 없음"
+                else "No danger state detected — consistency check not applicable"
             ),
         )
 
@@ -260,7 +264,7 @@ class PerformOpsValidatorImpl(PerformOpsValidator):
 
     @staticmethod
     def _build_rule_feedback(failed_rules: list[RuleCheckResult]) -> str:
-        lines = ["다음 문제를 수정하여 재계획하세요:"]
+        lines = ["Please fix the following issues and re-plan:"]
         for rule in failed_rules:
             lines.append(f"- [{rule.name}] {rule.detail}")
         return "\n".join(lines)

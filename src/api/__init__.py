@@ -18,12 +18,12 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     try:
         actions = await asyncio.wait_for(
-            ApidogClient().fetch_user_actions(), timeout=10.0
+            ApidogClient().fetch_user_actions(), timeout=30.0
         )
         UserActionStore.set(actions)
         logger.info(f"[startup] Loaded {len(actions)} user actions from apidog")
     except asyncio.TimeoutError:
-        logger.warning("[startup] apidog user action 로드 시간 초과 (10s)")
+        logger.warning("[startup] apidog user action 로드 시간 초과 (30s)")
     except Exception as e:
         logger.warning(f"[startup] apidog user action 로드 실패: {e}")
     yield

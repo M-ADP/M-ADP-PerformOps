@@ -8,33 +8,35 @@ from src.core.performops.analysis import PerformOpsAnalysis
 from src.core.performops.model import PerformOpsAnalysisResult
 from src.deps.get_llm import get_llm
 
-ANALYSIS_PROMPT = """아래는 {app_deployment_name} (project_id: {project_id})의 현재 상태 데이터입니다.
+ANALYSIS_PROMPT = """Below is the current status data for {app_deployment_name} (project_id: {project_id}).
 
-## 프로젝트 리소스
+## Project Resource
 {project_resource}
 
-## App Deployment 리소스 (CPU/Memory)
+## App Deployment Resource (CPU/Memory)
 CPU: {cpu}
 Memory: {memory}
-할당량: {app_deployment_resource}
+Allocation: {app_deployment_resource}
 
-## Deployment 이벤트
+## Deployment Events
 {deployment_status}
 
-## Pod 로그
+## Pod Logs
 {pod_log}
 
-## 트래픽
+## Traffic
 {traffic}
 
-## 지연 시간 (P95 latency)
+## Latency (P95 latency)
 {latency}
 
-각 항목에 대해 현재 상태(state), 변화(change), 판단 근거(basis)를 분석하고
-전체 원인 분석 결과(result)를 아래 JSON 형식으로만 반환하세요.
+Analyze each item for current state, change, and basis.
+Provide overall root cause analysis summary (result).
+
+IMPORTANT: Return ONLY the JSON format below. No explanations, no additional text. Use English only.
 
 {{
-  "result": "전체 원인 분석 요약",
+  "result": "Overall root cause analysis summary",
   "project_resource": {{"state": "...", "change": "...", "basis": "..."}},
   "app_deployment_resource": {{"state": "...", "change": "...", "basis": "..."}},
   "deployment_status": {{"state": "...", "change": "...", "basis": "..."}},
@@ -45,12 +47,11 @@ Memory: {memory}
 
 
 class PerformOpsAnalysisImpl(PerformOpsAnalysis):
-
     def __init__(
-            self,
-            metrics_analyzer: MetricsAnalyzer,
-            workload_state_analyzer: WorkLoadStateAnalyzer,
-            llm: LLM = None,
+        self,
+        metrics_analyzer: MetricsAnalyzer,
+        workload_state_analyzer: WorkLoadStateAnalyzer,
+        llm: LLM = None,
     ):
         super().__init__(
             metrics_analyzer=metrics_analyzer,
@@ -60,9 +61,9 @@ class PerformOpsAnalysisImpl(PerformOpsAnalysis):
         self._parser = AnalysisResultOutputParser()
 
     async def analyze(
-            self,
-            project_id: int,
-            app_deployment_name: str,
+        self,
+        project_id: int,
+        app_deployment_name: str,
     ) -> PerformOpsAnalysisResult:
         (
             project_resource,
@@ -75,13 +76,27 @@ class PerformOpsAnalysisImpl(PerformOpsAnalysis):
             latency,
         ) = await asyncio.gather(
             self._workload_state_analyzer.get_project_resource(project_id),
-            self._workload_state_analyzer.get_app_deployment_resource(project_id, app_deployment_name),
-            self._workload_state_analyzer.get_app_deployment_events(project_id, app_deployment_name),
-            self._workload_state_analyzer.get_app_deployment_logs(project_id, app_deployment_name),
-            self._metrics_analyzer.get_app_deployment_traffic(project_id, app_deployment_name),
-            self._metrics_analyzer.get_app_deployment_cpu(project_id, app_deployment_name),
-            self._metrics_analyzer.get_app_deployment_memory(project_id, app_deployment_name),
-            self._metrics_analyzer.get_app_deployment_latency(project_id, app_deployment_name),
+            self._workload_state_analyzer.get_app_deployment_resource(
+                project_id, app_deployment_name
+            ),
+            self._workload_state_analyzer.get_app_deployment_events(
+                project_id, app_deployment_name
+            ),
+            self._workload_state_analyzer.get_app_deployment_logs(
+                project_id, app_deployment_name
+            ),
+            self._metrics_analyzer.get_app_deployment_traffic(
+                project_id, app_deployment_name
+            ),
+            self._metrics_analyzer.get_app_deployment_cpu(
+                project_id, app_deployment_name
+            ),
+            self._metrics_analyzer.get_app_deployment_memory(
+                project_id, app_deployment_name
+            ),
+            self._metrics_analyzer.get_app_deployment_latency(
+                project_id, app_deployment_name
+            ),
         )
 
         response = await self._llm.chat(

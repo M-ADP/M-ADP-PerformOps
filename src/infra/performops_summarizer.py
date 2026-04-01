@@ -8,28 +8,30 @@ from src.core.performops.model import (
 from src.core.performops.summarizer import PerformOpsSummarizer
 from src.deps.get_llm import get_llm
 
-SUMMARY_PROMPT = """아래는 성능 이상 분석 결과와 조치 계획입니다.
+SUMMARY_PROMPT = """Below is the performance issue analysis result and action plan.
 
-## 원인 분석
+## Analysis Result
 {result}
 
-## 리소스 상태
-- 프로젝트 리소스: {project_resource}
-- App Deployment 리소스: {app_deployment_resource}
-- Deployment 상태: {deployment_status}
-- Pod 로그: {pod_log}
-- 트래픽: {traffic}
-- 지연 시간: {latency}
+## Resource Status
+- Project Resource: {project_resource}
+- App Deployment Resource: {app_deployment_resource}
+- Deployment Status: {deployment_status}
+- Pod Log: {pod_log}
+- Traffic: {traffic}
+- Latency: {latency}
 
-## 조치 계획
+## Action Plan
 {plans}
 
-위 내용을 바탕으로 전체 요약과 심각도를 아래 JSON 형식으로만 반환하세요.
-심각도는 "low", "medium", "high" 중 하나입니다.
-summary에는 현재 상황과 함께 사용자가 취해야 할 조치(user action 포함)를 반드시 포함하세요.
+Based on the above, provide an overall summary and severity level.
+
+IMPORTANT: Return ONLY the JSON format below. No explanations, no additional text. Use English only.
+Severity must be one of: "low", "medium", "high".
+Summary must include the current situation and the actions the user should take (including user actions).
 
 {{
-  "summary": "전체 상황 요약 및 사용자 조치 안내",
+  "summary": "Overall situation summary and user action guidance",
   "severity": "low | medium | high"
 }}"""
 
@@ -46,8 +48,8 @@ class PerformOpsSummarizerImpl(PerformOpsSummarizer):
     ) -> PerformOpsSummary:
         def format_plan(p):
             if p.user_action:
-                return f"- {p.plan} (이유: {p.reason}) → {p.user_action.summary}"
-            return f"- {p.plan} (이유: {p.reason})"
+                return f"- {p.action} (이유: {p.reason}) → {p.user_action.summary}"
+            return f"- {p.action} (이유: {p.reason})"
 
         plans_text = "\n".join(format_plan(p) for p in plan.actions)
 

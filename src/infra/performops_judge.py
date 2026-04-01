@@ -14,49 +14,47 @@ from src.deps.get_llm import get_llm
 
 logger = logging.getLogger(__name__)
 
-JUDGE_PROMPT = """당신은 Kubernetes 성능 운영 전문가입니다.
-동일한 장애 상황에 대해 두 가지 관점의 조치 계획이 수립되었습니다.
-현재 상황을 분석하여 더 적합한 계획을 선택하세요.
+JUDGE_PROMPT = """You are a Kubernetes performance operations expert.
+Two action plans from different perspectives have been created for the same incident.
+Analyze the current situation and select the more appropriate plan.
 
-## 원인 분석 결과
+## Analysis Result
 {analysis_result}
 
-## 리소스 상태
-- 프로젝트 리소스: {project_resource}
-- App Deployment 리소스: {app_deployment_resource}
-- Deployment 상태: {deployment_status}
-- Pod 로그: {pod_log}
-- 트래픽: {traffic}
-- 지연 시간: {latency}
+## Resource Status
+- Project Resource: {project_resource}
+- App Deployment Resource: {app_deployment_resource}
+- Deployment Status: {deployment_status}
+- Pod Log: {pod_log}
+- Traffic: {traffic}
+- Latency: {latency}
 
 ---
 
-## Plan A — Reactive (즉각 증상 제거)
+## Plan A — Reactive (Immediate symptom mitigation)
 {reactive_plan}
 
-## Plan B — Proactive (근본 원인 구조 개선)
+## Plan B — Proactive (Root cause structural improvement)
 {proactive_plan}
 
 ---
 
-## 선택 기준
-- **Reactive를 선택해야 하는 경우**: 현재 장애가 진행 중이거나 서비스 중단 위험이 높을 때.
-  빠른 안정화가 장기 최적화보다 우선한다.
-- **Proactive를 선택해야 하는 경우**: 근본 원인이 명확하고 반복 패턴이 보일 때.
-  즉각 조치보다 재발 방지가 더 효과적인 상황이다.
+## Selection Criteria
+- **Choose Reactive when**: An active incident is in progress or service disruption risk is high. Quick stabilization takes priority over long-term optimization.
+- **Choose Proactive when**: The root cause is clear and a repeating pattern is observed. Preventing recurrence is more effective than immediate action.
 
-두 계획 중 현재 상황에 더 적합한 것을 선택하고, 아래 JSON 형식으로만 반환하세요.
+IMPORTANT: Return ONLY the JSON format below. No explanations, no additional text. Use English only.
 
 {{
   "selected": "reactive",
-  "reason": "선택 이유를 한두 문장으로 설명"
+  "reason": "Brief reason for selection"
 }}
 
-또는
+or
 
 {{
   "selected": "proactive",
-  "reason": "선택 이유를 한두 문장으로 설명"
+  "reason": "Brief reason for selection"
 }}"""
 
 
@@ -66,8 +64,8 @@ def _format_plan(plan: PerformOpsPlan) -> str:
         api_info = ""
         if action.http_method and action.http_path:
             api_info = f" → {action.http_method} {action.http_path}"
-        lines.append(f"{i}. {action.action} (이유: {action.reason}){api_info}")
-    return "\n".join(lines) if lines else "(계획 없음)"
+        lines.append(f"{i}. {action.action} (reason: {action.reason}){api_info}")
+    return "\n".join(lines) if lines else "(no plan)"
 
 
 class PerformOpsJudgeImpl(PerformOpsJudge):
@@ -105,5 +103,5 @@ class PerformOpsJudgeImpl(PerformOpsJudge):
             logger.warning(f"[Judge] LLM 호출 실패, Reactive로 폴백. error={e}")
             return JudgeResult(
                 selected=PlannerType.REACTIVE,
-                reason="Judge 실패로 인한 Reactive 폴백",
+                reason="Judge failed, falling back to Reactive",
             )

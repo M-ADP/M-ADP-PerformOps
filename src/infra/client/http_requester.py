@@ -7,7 +7,8 @@ from src.core.requester import Requester
 
 class HttpRequester(Requester):
     async def get(self, url: str, **kwargs) -> Any:
-        async with aiohttp.ClientSession() as session:
+        timeout = aiohttp.ClientTimeout(total=30)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
             async with session.get(url, **kwargs) as response:
                 response.raise_for_status()
                 return await response.json()

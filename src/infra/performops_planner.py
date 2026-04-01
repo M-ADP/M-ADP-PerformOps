@@ -13,23 +13,22 @@ from src.core.performops.planner import PerformOpsPlanner
 from src.core.user_action_store import UserActionStore
 from src.deps.get_llm import get_llm
 
-# ── 공통: 2단계 Tool-select ──────────────────────────────────────────────────
-TOOL_SELECT_PROMPT = """당신은 Kubernetes 클러스터 관리자입니다.
-아래 조치를 실행하기 위해 사용할 Resource Manager API와 요청 body를 결정하세요.
+# ── Common: Tool-select stage ──────────────────────────────────────────────────
+TOOL_SELECT_PROMPT = """You are a Kubernetes cluster administrator.
+Select the appropriate Resource Manager API to execute the following action.
 
-## 조치
-- 내용: {action}
-- 이유: {reason}
+## Action
+- Content: {action}
+- Reason: {reason}
 
-## 사용 가능한 Resource Manager API
+## Available Resource Manager APIs
 {user_actions}
 
-위 API 중 이 조치를 실행하는 데 가장 적합한 API 하나를 선택하고,
-실제 호출에 필요한 request body를 JSON으로 작성하세요.
-path의 {{project-id}}, {{name}} 등 경로 변수는 그대로 두세요.
-대응하는 API가 없으면 null을 반환하세요.
+Select ONE most appropriate API from the list above and create the request body in JSON format.
+Keep path variables like {{project-id}}, {{name}} as is.
+If no appropriate API exists, return null.
 
-아래 JSON 형식으로만 반환하세요.
+IMPORTANT: Return ONLY the JSON format below. No explanations, no additional text.
 
 {{
   "method": "PATCH",
@@ -37,138 +36,138 @@ path의 {{project-id}}, {{name}} 등 경로 변수는 그대로 두세요.
   "body": {{"memory": "1Gi", "cpu": "500m"}}
 }}
 
-또는 대응 API 없음:
+Or if no matching API:
 
 null"""
 
-# ── Reactive: 증상 즉시 제거 관점 ────────────────────────────────────────────
-REACTIVE_PLAN_PROMPT = """아래는 성능 이상 원인 분석 결과입니다.
+# ── Reactive: Immediate symptom mitigation ────────────────────────────────────────────
+REACTIVE_PLAN_PROMPT = """Below is the performance issue analysis result.
 
-## 분석 결과
+## Analysis Result
 {result}
 
-## 리소스 상태
-- 프로젝트 리소스: {project_resource}
-- App Deployment 리소스: {app_deployment_resource}
-- Deployment 상태: {deployment_status}
-- Pod 로그: {pod_log}
-- 트래픽: {traffic}
-- 지연 시간: {latency}
+## Resource Status
+- Project Resource: {project_resource}
+- App Deployment Resource: {app_deployment_resource}
+- Deployment Status: {deployment_status}
+- Pod Log: {pod_log}
+- Traffic: {traffic}
+- Latency: {latency}
 
-당신은 Kubernetes 클러스터 관리자입니다. 당신의 역할은 **지금 당장 장애를 멈추는 것**입니다.
+You are a Kubernetes cluster administrator. Your role is to **stop the incident immediately**.
 
-현재 발생 중인 증상(OOMKill, 트래픽 폭증, 높은 지연시간 등)을 즉시 억제하는 데 집중하세요.
-- 리소스(CPU/Memory limit, replica 수)를 여유 있게 늘리는 방향으로 판단하세요.
-- 설정의 정교함보다 빠른 안정화를 우선합니다.
-- 근본 원인 분석보다 증상 제거가 목표입니다.
+Focus on suppressing current symptoms (OOMKill, traffic surge, high latency) right now.
+- Increase resources (CPU/Memory limits, replica count) generously.
+- Prioritize quick stabilization over precise configuration.
+- Symptom removal is the goal, not root cause analysis.
 
-아래 JSON 형식으로만 반환하세요.
+IMPORTANT: Return ONLY the JSON format below. No explanations, no additional text.
 
 {{
   "plans": [
     {{
-      "action": "조치 내용",
-      "reason": "해당 조치가 필요한 이유"
+      "action": "Action description",
+      "reason": "Why this action is needed"
     }}
   ]
 }}"""
 
-REACTIVE_PLAN_REFINEMENT_PROMPT = """아래는 성능 이상 원인 분석 결과입니다.
+REACTIVE_PLAN_REFINEMENT_PROMPT = """Below is the performance issue analysis result.
 
-## 분석 결과
+## Analysis Result
 {result}
 
-## 리소스 상태
-- 프로젝트 리소스: {project_resource}
-- App Deployment 리소스: {app_deployment_resource}
-- Deployment 상태: {deployment_status}
-- Pod 로그: {pod_log}
-- 트래픽: {traffic}
-- 지연 시간: {latency}
+## Resource Status
+- Project Resource: {project_resource}
+- App Deployment Resource: {app_deployment_resource}
+- Deployment Status: {deployment_status}
+- Pod Log: {pod_log}
+- Traffic: {traffic}
+- Latency: {latency}
 
-당신은 Kubernetes 클러스터 관리자입니다. 당신의 역할은 **지금 당장 장애를 멈추는 것**입니다.
+You are a Kubernetes cluster administrator. Your role is to **stop the incident immediately**.
 
-현재 발생 중인 증상(OOMKill, 트래픽 폭증, 높은 지연시간 등)을 즉시 억제하는 데 집중하세요.
-- 리소스(CPU/Memory limit, replica 수)를 여유 있게 늘리는 방향으로 판단하세요.
-- 설정의 정교함보다 빠른 안정화를 우선합니다.
-- 근본 원인 분석보다 증상 제거가 목표입니다.
+Focus on suppressing current symptoms (OOMKill, traffic surge, high latency) right now.
+- Increase resources (CPU/Memory limits, replica count) generously.
+- Prioritize quick stabilization over precise configuration.
+- Symptom removal is the goal, not root cause analysis.
 
-## 이전 계획의 문제점 (반드시 반영할 것)
+## Previous Plan Issues (Must address)
 {feedback}
 
-아래 JSON 형식으로만 반환하세요.
+IMPORTANT: Return ONLY the JSON format below. No explanations, no additional text.
 
 {{
   "plans": [
     {{
-      "action": "조치 내용",
-      "reason": "해당 조치가 필요한 이유"
+      "action": "Action description",
+      "reason": "Why this action is needed"
     }}
   ]
 }}"""
 
-# ── Proactive: 근본 원인 제거 관점 ───────────────────────────────────────────
-PROACTIVE_PLAN_PROMPT = """아래는 성능 이상 원인 분석 결과입니다.
+# ── Proactive: Root cause elimination ───────────────────────────────────────────
+PROACTIVE_PLAN_PROMPT = """Below is the performance issue analysis result.
 
-## 분석 결과
+## Analysis Result
 {result}
 
-## 리소스 상태
-- 프로젝트 리소스: {project_resource}
-- App Deployment 리소스: {app_deployment_resource}
-- Deployment 상태: {deployment_status}
-- Pod 로그: {pod_log}
-- 트래픽: {traffic}
-- 지연 시간: {latency}
+## Resource Status
+- Project Resource: {project_resource}
+- App Deployment Resource: {app_deployment_resource}
+- Deployment Status: {deployment_status}
+- Pod Log: {pod_log}
+- Traffic: {traffic}
+- Latency: {latency}
 
-당신은 Kubernetes 클러스터 관리자입니다. 당신의 역할은 **같은 문제가 반복되지 않도록 구조를 개선하는 것**입니다.
+You are a Kubernetes cluster administrator. Your role is to **improve the system structure to prevent recurrence**.
 
-현재 증상의 근본 원인(잘못된 request/limit 비율, HPA 설정 부재, 리소스 쿼터 미조정 등)을 찾아 해결하세요.
-- 단순 리소스 증설보다 설정 비율 재조정, 자동화 정책 도입을 우선하세요.
-- 장기적인 시스템 안정성과 효율성을 목표로 합니다.
-- 즉각적인 증상 억제보다 재발 방지가 목표입니다.
+Find and solve root causes (wrong request/limit ratio, missing HPA, untuned resource quotas).
+- Prioritize configuration ratio adjustments and automation policies over simple resource increases.
+- Target long-term system stability and efficiency.
+- Prevention of recurrence is the goal, not immediate symptom suppression.
 
-아래 JSON 형식으로만 반환하세요.
+IMPORTANT: Return ONLY the JSON format below. No explanations, no additional text.
 
 {{
   "plans": [
     {{
-      "action": "조치 내용",
-      "reason": "해당 조치가 필요한 이유"
+      "action": "Action description",
+      "reason": "Why this action is needed"
     }}
   ]
 }}"""
 
-PROACTIVE_PLAN_REFINEMENT_PROMPT = """아래는 성능 이상 원인 분석 결과입니다.
+PROACTIVE_PLAN_REFINEMENT_PROMPT = """Below is the performance issue analysis result.
 
-## 분석 결과
+## Analysis Result
 {result}
 
-## 리소스 상태
-- 프로젝트 리소스: {project_resource}
-- App Deployment 리소스: {app_deployment_resource}
-- Deployment 상태: {deployment_status}
-- Pod 로그: {pod_log}
-- 트래픽: {traffic}
-- 지연 시간: {latency}
+## Resource Status
+- Project Resource: {project_resource}
+- App Deployment Resource: {app_deployment_resource}
+- Deployment Status: {deployment_status}
+- Pod Log: {pod_log}
+- Traffic: {traffic}
+- Latency: {latency}
 
-당신은 Kubernetes 클러스터 관리자입니다. 당신의 역할은 **같은 문제가 반복되지 않도록 구조를 개선하는 것**입니다.
+You are a Kubernetes cluster administrator. Your role is to **improve the system structure to prevent recurrence**.
 
-현재 증상의 근본 원인(잘못된 request/limit 비율, HPA 설정 부재, 리소스 쿼터 미조정 등)을 찾아 해결하세요.
-- 단순 리소스 증설보다 설정 비율 재조정, 자동화 정책 도입을 우선하세요.
-- 장기적인 시스템 안정성과 효율성을 목표로 합니다.
-- 즉각적인 증상 억제보다 재발 방지가 목표입니다.
+Find and solve root causes (wrong request/limit ratio, missing HPA, untuned resource quotas).
+- Prioritize configuration ratio adjustments and automation policies over simple resource increases.
+- Target long-term system stability and efficiency.
+- Prevention of recurrence is the goal, not immediate symptom suppression.
 
-## 이전 계획의 문제점 (반드시 반영할 것)
+## Previous Plan Issues (Must address)
 {feedback}
 
-아래 JSON 형식으로만 반환하세요.
+IMPORTANT: Return ONLY the JSON format below. No explanations, no additional text.
 
 {{
   "plans": [
     {{
-      "action": "조치 내용",
-      "reason": "해당 조치가 필요한 이유"
+      "action": "Action description",
+      "reason": "Why this action is needed"
     }}
   ]
 }}"""
