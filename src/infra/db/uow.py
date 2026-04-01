@@ -6,7 +6,6 @@ from src.infra.db.performops.repository import PerformopsRepositoryImpl
 
 
 class SqlAlchemyUnitOfWork(UnitOfWork):
-
     def __init__(self, session: AsyncSession):
         self.session = session
         self.performops: PerformopsRepository = PerformopsRepositoryImpl(session)
@@ -17,6 +16,8 @@ class SqlAlchemyUnitOfWork(UnitOfWork):
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         if exc_type:
             await self.rollback()
+        else:
+            await self.commit()
         await self.session.close()
 
     async def commit(self):

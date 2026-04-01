@@ -16,8 +16,5 @@ async def get_db_session() -> AsyncIterator[AsyncSession]:
 async def get_uow(
     session: AsyncSession = Depends(get_db_session),
 ) -> AsyncIterator[UnitOfWork]:
-    uow = SqlAlchemyUnitOfWork(session)
-    try:
+    async with SqlAlchemyUnitOfWork(session) as uow:
         yield uow
-    finally:
-        await uow.session.close()

@@ -40,33 +40,41 @@ class ApprovePerformopsUseCase(BaseUseCase):
         performops_id: int,
         action_ids: List[int],
     ) -> Performops:
-        # 1. action_ids 순서대로 actions 조회
         actions = await self.uow.performops.get_actions_by_ids(action_ids)
 
-        # 2. 순서대로 Resource Manager 호출
-        for action in actions:
-            await self._execute_action(action)
-
-        await self.uow.commit()
-
-        # 3. analyzer + planner 재실행 → 새 PerformOps 저장
-        # performops_id로 원본 performops 정보 조회
         original = await self._get_performops(performops_id)
+        context = {
+            "project_id": original.project_id,
+            "app_deployment_name": original.app_deployment_name,
+        }
+
+        for action in actions:
+            await self._execute_action(action, context)
+
         new_result = await self.performops_core.start(
             project_id=original.project_id,
             app_deployment_name=original.app_deployment_name,
         )
         saved = await self.uow.performops.save(new_result)
-        await self.uow.commit()
 
         return saved
 
-    async def _execute_action(self, action: PerformOpsAction) -> None:
+    async def _execute_action(self, action: PerformOpsAction, context: dict) -> None:
         method = (action.http_method or "").upper()
         path = action.http_path or ""
 
         if not method or not path:
-            logger.warning(f"[approve] action_id={action.id} http 정보 없음, 건너뜀")
+            logger.warning(
+                f"[approve] action_id={action.id} http info missing, skipping"
+            )
+            await self.uow.performops.update_action_state(action.id, ActionState.FAILED)
+            return
+
+        path = self._substitute_path(path, context)
+        if not path:
+            logger.warning(
+                f"[approve] action_id={action.id} path variable substitution failed, skipping"
+            )
             await self.uow.performops.update_action_state(action.id, ActionState.FAILED)
             return
 
@@ -76,7 +84,7 @@ class ApprovePerformopsUseCase(BaseUseCase):
         try:
             caller = _METHOD_MAP.get(method)
             if caller is None:
-                raise ValueError(f"지원하지 않는 HTTP method: {method}")
+                raise ValueError(f"unsupported HTTP method: {method}")
 
             if method in ("POST", "PATCH", "PUT"):
                 await caller(self.requester, url=url, body=body)
@@ -86,11 +94,35 @@ class ApprovePerformopsUseCase(BaseUseCase):
             await self.uow.performops.update_action_state(
                 action.id, ActionState.EXECUTED
             )
-            logger.info(f"[approve] action_id={action.id} 실행 완료: {method} {path}")
+            logger.info(f"[approve] action_id={action.id} executed: {method} {path}")
 
         except Exception as e:
-            logger.error(f"[approve] action_id={action.id} 실행 실패: {e}")
+            logger.error(f"[approve] action_id={action.id} execution failed: {e}")
             await self.uow.performops.update_action_state(action.id, ActionState.FAILED)
+
+    def _substitute_path(self, path: str, context: dict) -> str:
+        replacements = {
+            "{project-id}": str(context.get("project_id", "")),
+            "{project_id}": str(context.get("project_id", "")),
+            "{name}": context.get("app_deployment_name", ""),
+            "{app_deployment_name}": context.get("app_deployment_name", ""),
+            "{app-name}": context.get("app_deployment_name", ""),
+            "{dns_id}": str(context.get("dns_id", "")),
+            "{dns_name}": context.get("dns_name", ""),
+        }
+
+        for placeholder, value in replacements.items():
+            if placeholder in path:
+                if not value:
+                    logger.warning(f"[approve] missing value for {placeholder}")
+                    return ""
+                path = path.replace(placeholder, value)
+
+        if "{" in path or "}" in path:
+            logger.warning(f"[approve] unresolved path variables remaining: {path}")
+            return ""
+
+        return path
 
     async def _get_performops(self, performops_id: int) -> Performops:
         from sqlalchemy import select
