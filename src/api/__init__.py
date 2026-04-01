@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 from json import JSONDecodeError
@@ -16,8 +17,13 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     try:
-        actions = await ApidogClient().fetch_user_actions()
+        actions = await asyncio.wait_for(
+            ApidogClient().fetch_user_actions(), timeout=10.0
+        )
         UserActionStore.set(actions)
+        logger.info(f"[startup] Loaded {len(actions)} user actions from apidog")
+    except asyncio.TimeoutError:
+        logger.warning("[startup] apidog user action 로드 시간 초과 (10s)")
     except Exception as e:
         logger.warning(f"[startup] apidog user action 로드 실패: {e}")
     yield
@@ -25,6 +31,10 @@ async def lifespan(app: FastAPI):
 
 def register_routers(app: FastAPI) -> None:
     app.include_router(performops_router)
+
+    @app.get("/actuator/health")
+    async def health_check():
+        return {"status": "UP"}
 
 
 def register_exception_handlers(app: FastAPI) -> None:

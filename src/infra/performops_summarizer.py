@@ -1,6 +1,10 @@
 from src.core.llm import LLM
 from src.core.output_parser import SummaryOutputParser
-from src.core.performops.model import PerformOpsAnalysisResult, PerformOpsPlan, PerformOpsSummary
+from src.core.performops.model import (
+    PerformOpsAnalysisResult,
+    PerformOpsPlan,
+    PerformOpsSummary,
+)
 from src.core.performops.summarizer import PerformOpsSummarizer
 from src.deps.get_llm import get_llm
 
@@ -31,22 +35,21 @@ summary에는 현재 상황과 함께 사용자가 취해야 할 조치(user act
 
 
 class PerformOpsSummarizerImpl(PerformOpsSummarizer):
-
     def __init__(self, llm: LLM = None):
         self._llm = llm or get_llm(template=SUMMARY_PROMPT)
         self._parser = SummaryOutputParser()
 
     async def summarize(
-            self,
-            analysis_result: PerformOpsAnalysisResult,
-            plan: PerformOpsPlan,
+        self,
+        analysis_result: PerformOpsAnalysisResult,
+        plan: PerformOpsPlan,
     ) -> PerformOpsSummary:
         def format_plan(p):
             if p.user_action:
                 return f"- {p.plan} (이유: {p.reason}) → {p.user_action.summary}"
             return f"- {p.plan} (이유: {p.reason})"
 
-        plans_text = "\n".join(format_plan(p) for p in plan.plans)
+        plans_text = "\n".join(format_plan(p) for p in plan.actions)
 
         response = await self._llm.chat(
             variables=[
